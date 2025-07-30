@@ -44,3 +44,4 @@ pub mod models;
 pub use client::Client;
 pub use config::Config;
 pub use error::{Error, Result};
+pub use models::*;

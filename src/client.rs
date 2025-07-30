@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
 //! Main client implementation for RSAirtable
 //!
 //! This module provides the core Client struct and its methods for interacting
@@ -37,7 +39,7 @@ impl Client {
     /// Create a new client from configuration
     pub fn from_config(config: Config) -> Self {
         let mut headers = header::HeaderMap::new();
-        
+
         // Set authorization header with Bearer token
         let auth_value = format!("Bearer {}", config.api_key);
         headers.insert(
@@ -76,7 +78,7 @@ impl Client {
     pub async fn whoami(&self) -> Result<UserInfo> {
         let url = format!("{}/meta/whoami", self.config.endpoint_url);
         let response = self.http_client.get(&url).send().await?;
-        
+
         if !response.status().is_success() {
             return Err(self.parse_error_response(response).await);
         }
@@ -89,7 +91,7 @@ impl Client {
     pub async fn bases(&self) -> Result<Vec<BaseInfo>> {
         let url = format!("{}/meta/bases", self.config.endpoint_url);
         let response = self.http_client.get(&url).send().await?;
-        
+
         if !response.status().is_success() {
             return Err(self.parse_error_response(response).await);
         }
@@ -101,7 +103,7 @@ impl Client {
     /// Parse error response from API
     async fn parse_error_response(&self, response: reqwest::Response) -> Error {
         let status = response.status().as_u16();
-        
+
         // Try to parse structured error response
         if let Ok(error_response) = response.json::<ErrorResponse>().await {
             Error::api(status, error_response.error.message)
@@ -135,10 +137,12 @@ impl BaseHandle {
 
     /// Get base schema information
     pub async fn schema(&self) -> Result<BaseSchema> {
-        let url = format!("{}/meta/bases/{}/tables", 
-                         self.client.config.endpoint_url, self.base_id);
+        let url = format!(
+            "{}/meta/bases/{}/tables",
+            self.client.config.endpoint_url, self.base_id
+        );
         let response = self.client.http_client.get(&url).send().await?;
-        
+
         if !response.status().is_success() {
             return Err(self.client.parse_error_response(response).await);
         }
@@ -180,11 +184,13 @@ impl TableHandle {
 
     /// Build URL for table operations
     fn build_url(&self, path: &str) -> String {
-        format!("{}/{}/{}/{}",
-                self.base.client.config.endpoint_url,
-                self.base.base_id,
-                urlencoding::encode(&self.table_name),
-                path)
+        format!(
+            "{}/{}/{}/{}",
+            self.base.client.config.endpoint_url,
+            self.base.base_id,
+            urlencoding::encode(&self.table_name),
+            path
+        )
     }
 
     /// Get table name
@@ -253,40 +259,44 @@ impl ListRecordsQuery {
 
         loop {
             let mut url = Url::parse(&self.table.build_url(""))?;
-            
+
             // Add query parameters
             let mut query_pairs = url.query_pairs_mut();
-            
+
             if let Some(max_records) = self.max_records {
                 query_pairs.append_pair("maxRecords", &max_records.to_string());
             }
-            
+
             if let Some(page_size) = self.page_size {
                 query_pairs.append_pair("pageSize", &page_size.to_string());
             }
-            
+
             if let Some(ref fields) = self.fields {
                 for field in fields {
                     query_pairs.append_pair("fields[]", field);
                 }
             }
-            
+
             if let Some(ref formula) = self.filter_by_formula {
                 query_pairs.append_pair("filterByFormula", formula);
             }
-            
+
             if let Some(ref view) = self.view {
                 query_pairs.append_pair("view", view);
             }
-            
+
             if let Some(ref offset_val) = offset {
                 query_pairs.append_pair("offset", offset_val);
             }
-            
+
             drop(query_pairs);
 
             // Make the request
-            let response = self.table.base.client.http_client
+            let response = self
+                .table
+                .base
+                .client
+                .http_client
                 .get(url.as_str())
                 .send()
                 .await?;
@@ -297,11 +307,11 @@ impl ListRecordsQuery {
 
             let list_response: ListRecordsResponse = response.json().await?;
             all_records.extend(list_response.records);
-            
+
             // Check if we have more pages
             if let Some(next_offset) = list_response.offset {
                 offset = Some(next_offset);
-                
+
                 // Respect max_records limit
                 if let Some(max) = self.max_records {
                     if all_records.len() >= max as usize {
