@@ -119,6 +119,17 @@ impl Client {
     }
 }
 
+fn parse_records(json: &serde_json::Value) -> Vec<Record> {
+    json.get("records")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|rec| serde_json::from_value(rec.clone()).ok())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// Handle for operations on a specific base
 #[derive(Debug, Clone)]
 pub struct BaseHandle {
@@ -179,6 +190,7 @@ impl TableHandle {
             time_zone: None,
             user_locale: None,
             return_fields_by_field_id: None,
+            offset: None,
         }
     }
 
@@ -197,6 +209,68 @@ impl TableHandle {
     pub fn name(&self) -> &str {
         &self.table_name
     }
+
+    /// Get all records from the table (convenience method)
+    pub async fn all(&self) -> Result<Vec<Record>> {
+        let mut all_records = Vec::new();
+        let mut offset = None;
+        loop {
+            let (records, next_offset) = self.list().offset(offset.clone()).execute().await?;
+            all_records.extend(records);
+            if next_offset.is_none() {
+                break;
+            }
+            offset = next_offset;
+        }
+        Ok(all_records)
+    }
+
+    /// Get a single record by ID
+    pub async fn get(&self, record_id: &str) -> Result<Record> {
+        let url = self.build_url(record_id);
+        let response = self.base.client.http_client.get(&url).send().await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let record: Record = response.json().await?;
+        Ok(record)
+    }
+
+    /// Get the first record (optionally with filters)
+    pub fn first(&self) -> FirstRecordQuery {
+        FirstRecordQuery {
+            table: self.clone(),
+            fields: None,
+            filter_by_formula: None,
+            view: None,
+        }
+    }
+
+    /// Create an iterator for paginated record retrieval
+    pub fn iterate(&self) -> RecordIteratorBuilder {
+        RecordIteratorBuilder {
+            table: self.clone(),
+            page_size: None,
+            fields: None,
+            filter_by_formula: None,
+            view: None,
+            sort: None,
+        }
+    }
+
+    /// Create a query builder for complex record selection
+    pub fn select(&self) -> SelectQueryBuilder {
+        SelectQueryBuilder {
+            table: self.clone(),
+            fields: None,
+            filter_by_formula: None,
+            sort: None,
+            view: None,
+            max_records: None,
+        }
+    }
 }
 
 /// Query builder for listing records with various filters and options
@@ -213,6 +287,7 @@ pub struct ListRecordsQuery {
     time_zone: Option<String>,
     user_locale: Option<String>,
     return_fields_by_field_id: Option<bool>,
+    offset: Option<String>, // <-- Add this field
 }
 
 impl ListRecordsQuery {
@@ -229,8 +304,8 @@ impl ListRecordsQuery {
     }
 
     /// Set specific fields to return
-    pub fn fields(mut self, fields: Vec<String>) -> Self {
-        self.fields = Some(fields);
+    pub fn fields(mut self, fields: &[&str]) -> Self {
+        self.fields = Some(fields.iter().map(|s| s.to_string()).collect());
         self
     }
 
@@ -253,82 +328,301 @@ impl ListRecordsQuery {
     }
 
     /// Execute the query and return all matching records
-    pub async fn execute(self) -> Result<Vec<Record>> {
-        let mut all_records = Vec::new();
-        let mut offset: Option<String> = None;
+    pub async fn execute(self) -> Result<(Vec<Record>, Option<String>)> {
+        let mut url = Url::parse(&self.table.build_url(""))?;
+        let mut query_pairs = url.query_pairs_mut();
 
-        loop {
-            let mut url = Url::parse(&self.table.build_url(""))?;
+        if let Some(max_records) = self.max_records {
+            query_pairs.append_pair("maxRecords", &max_records.to_string());
+        }
 
-            // Add query parameters
-            let mut query_pairs = url.query_pairs_mut();
+        if let Some(page_size) = self.page_size {
+            query_pairs.append_pair("pageSize", &page_size.to_string());
+        }
 
-            if let Some(max_records) = self.max_records {
-                query_pairs.append_pair("maxRecords", &max_records.to_string());
-            }
-
-            if let Some(page_size) = self.page_size {
-                query_pairs.append_pair("pageSize", &page_size.to_string());
-            }
-
-            if let Some(ref fields) = self.fields {
-                for field in fields {
-                    query_pairs.append_pair("fields[]", field);
-                }
-            }
-
-            if let Some(ref formula) = self.filter_by_formula {
-                query_pairs.append_pair("filterByFormula", formula);
-            }
-
-            if let Some(ref view) = self.view {
-                query_pairs.append_pair("view", view);
-            }
-
-            if let Some(ref offset_val) = offset {
-                query_pairs.append_pair("offset", offset_val);
-            }
-
-            drop(query_pairs);
-
-            // Make the request
-            let response = self
-                .table
-                .base
-                .client
-                .http_client
-                .get(url.as_str())
-                .send()
-                .await?;
-
-            if !response.status().is_success() {
-                return Err(self.table.base.client.parse_error_response(response).await);
-            }
-
-            let list_response: ListRecordsResponse = response.json().await?;
-            all_records.extend(list_response.records);
-
-            // Check if we have more pages
-            if let Some(next_offset) = list_response.offset {
-                offset = Some(next_offset);
-
-                // Respect max_records limit
-                if let Some(max) = self.max_records {
-                    if all_records.len() >= max as usize {
-                        all_records.truncate(max as usize);
-                        break;
-                    }
-                }
-            } else {
-                break;
+        if let Some(ref fields) = self.fields {
+            for field in fields {
+                query_pairs.append_pair("fields[]", field);
             }
         }
 
-        Ok(all_records)
+        if let Some(ref formula) = self.filter_by_formula {
+            query_pairs.append_pair("filterByFormula", formula);
+        }
+
+        if let Some(ref view) = self.view {
+            query_pairs.append_pair("view", view);
+        }
+
+        if let Some(ref offset_val) = self.offset {
+            query_pairs.append_pair("offset", offset_val);
+        }
+
+        drop(query_pairs);
+
+        // Make the request
+        let response = self
+            .table
+            .base
+            .client
+            .http_client
+            .get(url.as_str())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.table.base.client.parse_error_response(response).await);
+        }
+
+        let response_json: serde_json::Value = response.json().await?;
+        let records = parse_records(&response_json); // Use your existing record parsing logic
+        let next_offset = response_json
+            .get("offset")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+        Ok((records, next_offset))
+    }
+
+    pub fn offset(mut self, offset: Option<String>) -> Self {
+        self.offset = offset;
+        self
     }
 }
 
 // Add urlencoding dependency to Cargo.toml when we test
+/// Query builder for getting the first record with optional filters
+#[derive(Debug, Clone)]
+pub struct FirstRecordQuery {
+    table: TableHandle,
+    fields: Option<Vec<String>>,
+    filter_by_formula: Option<String>,
+    view: Option<String>,
+}
+
+impl FirstRecordQuery {
+    /// Specify fields to return
+    pub fn fields(mut self, fields: &[&str]) -> Self {
+        self.fields = Some(fields.iter().map(|s| s.to_string()).collect());
+        self
+    }
+
+    /// Add filter formula
+    pub fn filter_by_formula<S: Into<String>>(mut self, formula: S) -> Self {
+        self.filter_by_formula = Some(formula.into());
+        self
+    }
+
+    /// Specify view to use
+    pub fn view<S: Into<String>>(mut self, view: S) -> Self {
+        self.view = Some(view.into());
+        self
+    }
+
+    /// Execute and return the first matching record
+    pub async fn execute(self) -> Result<Record> {
+        let mut query = self.table.list().max_records(1);
+
+        if let Some(ref fields) = self.fields {
+            query = query.fields(&fields.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+        }
+
+        if let Some(formula) = self.filter_by_formula {
+            query = query.filter_by_formula(&formula);
+        }
+
+        if let Some(view) = self.view {
+            query = query.view(&view);
+        }
+
+        let (records, _) = query.execute().await?;
+        records
+            .into_iter()
+            .next()
+            .ok_or_else(|| crate::Error::RecordNotFound {
+                record_id: "first record".to_string(),
+            })
+    }
+}
+
+/// Builder for creating paginated record iterators
+#[derive(Debug, Clone)]
+pub struct RecordIteratorBuilder {
+    table: TableHandle,
+    page_size: Option<u32>,
+    fields: Option<Vec<String>>,
+    filter_by_formula: Option<String>,
+    view: Option<String>,
+    sort: Option<Vec<String>>,
+}
+
+impl RecordIteratorBuilder {
+    /// Set page size for pagination
+    pub fn page_size(mut self, size: u32) -> Self {
+        self.page_size = Some(size);
+        self
+    }
+
+    /// Specify fields to return
+    pub fn fields(mut self, fields: &[&str]) -> Self {
+        self.fields = Some(fields.iter().map(|s| s.to_string()).collect());
+        self
+    }
+
+    /// Add filter formula
+    pub fn filter_by_formula<S: Into<String>>(mut self, formula: S) -> Self {
+        self.filter_by_formula = Some(formula.into());
+        self
+    }
+
+    /// Specify view to use
+    pub fn view<S: Into<String>>(mut self, view: S) -> Self {
+        self.view = Some(view.into());
+        self
+    }
+
+    /// Build the iterator
+    pub async fn build(self) -> Result<RecordIterator> {
+        Ok(RecordIterator {
+            table: self.table,
+            page_size: self.page_size.unwrap_or(100),
+            fields: self.fields,
+            filter_by_formula: self.filter_by_formula,
+            view: self.view,
+            sort: self.sort,
+            offset: None,
+            finished: false,
+        })
+    }
+}
+
+/// Iterator for paginated record retrieval
+#[derive(Debug)]
+pub struct RecordIterator {
+    table: TableHandle,
+    page_size: u32,
+    fields: Option<Vec<String>>,
+    filter_by_formula: Option<String>,
+    view: Option<String>,
+    sort: Option<Vec<String>>,
+    offset: Option<String>,
+    finished: bool,
+}
+
+impl RecordIterator {
+    /// Get the next batch of records
+    pub async fn next(&mut self) -> Option<Result<Vec<Record>>> {
+        if self.finished {
+            return None;
+        }
+
+        let mut query = self.table.list().page_size(self.page_size);
+
+        if let Some(ref fields) = self.fields {
+            query = query.fields(&fields.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+        }
+
+        if let Some(ref formula) = self.filter_by_formula {
+            query = query.filter_by_formula(formula);
+        }
+
+        if let Some(ref view) = self.view {
+            query = query.view(view);
+        }
+
+        if let Some(ref offset) = self.offset {
+            query = query.offset(Some(offset.clone()));
+        }
+
+        // Execute single page
+        let result = query.execute().await;
+        match result {
+            Ok((records, next_offset)) => {
+                if next_offset.is_none() || records.len() < self.page_size as usize {
+                    self.finished = true;
+                }
+                self.offset = next_offset;
+                Some(Ok(records))
+            }
+            Err(e) => {
+                self.finished = true;
+                Some(Err(e))
+            }
+        }
+    }
+}
+
+/// Query builder for complex record selection
+#[derive(Debug, Clone)]
+pub struct SelectQueryBuilder {
+    table: TableHandle,
+    fields: Option<Vec<String>>,
+    filter_by_formula: Option<String>,
+    sort: Option<Vec<(String, String)>>,
+    view: Option<String>,
+    max_records: Option<u32>,
+}
+
+impl SelectQueryBuilder {
+    /// Specify fields to return
+    pub fn fields(mut self, fields: &[&str]) -> Self {
+        self.fields = Some(fields.iter().map(|s| s.to_string()).collect());
+        self
+    }
+
+    /// Add filter formula
+    pub fn filter_by_formula<S: Into<String>>(mut self, formula: S) -> Self {
+        self.filter_by_formula = Some(formula.into());
+        self
+    }
+
+    /// Add sorting
+    pub fn sort(mut self, sort_spec: &[(&str, &str)]) -> Self {
+        self.sort = Some(
+            sort_spec
+                .iter()
+                .map(|(field, direction)| (field.to_string(), direction.to_string()))
+                .collect(),
+        );
+        self
+    }
+
+    /// Specify view to use
+    pub fn view<S: Into<String>>(mut self, view: S) -> Self {
+        self.view = Some(view.into());
+        self
+    }
+
+    /// Set maximum number of records
+    pub fn max_records(mut self, max: u32) -> Self {
+        self.max_records = Some(max);
+        self
+    }
+
+    /// Execute the query
+    pub async fn execute(self) -> Result<Vec<Record>> {
+        let mut query = self.table.list();
+
+        if let Some(ref fields) = self.fields {
+            query = query.fields(&fields.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+        }
+
+        if let Some(formula) = self.filter_by_formula {
+            query = query.filter_by_formula(&formula);
+        }
+
+        if let Some(view) = self.view {
+            query = query.view(&view);
+        }
+
+        if let Some(max) = self.max_records {
+            query = query.max_records(max);
+        }
+
+        let (records, _) = query.execute().await?;
+        Ok(records)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

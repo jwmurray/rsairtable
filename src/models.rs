@@ -200,8 +200,8 @@ pub struct ApiError {
 pub struct UserInfo {
     /// User ID
     pub id: String,
-    /// User display name
-    pub name: String,
+    /// User display name (optional - not always provided by Airtable API)
+    pub name: Option<String>,
     /// User email
     pub email: String,
 }

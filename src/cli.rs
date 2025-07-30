@@ -10,7 +10,7 @@ use std::process;
 #[tokio::main]
 async fn main() {
     let matches = build_cli().get_matches();
-    
+
     if let Err(e) = run_command(matches).await {
         eprintln!("Error: {}", e);
         process::exit(1);
@@ -27,37 +27,31 @@ fn build_cli() -> Command {
                 .long("key")
                 .value_name("KEY")
                 .help("Your API key/token")
-                .env("PERSONAL_ACCESS_TOKEN")
+                .env("PERSONAL_ACCESS_TOKEN"),
         )
         .arg(
             Arg::new("key-file")
                 .short('f')
                 .long("key-file")
                 .value_name("PATH")
-                .help("File containing your API key")
+                .help("File containing your API key"),
         )
         .arg(
             Arg::new("key-env")
                 .short('e')
                 .long("key-env")
                 .value_name("VAR")
-                .help("Environment variable containing your API key")
+                .help("Environment variable containing your API key"),
         )
         .arg(
             Arg::new("verbose")
                 .short('v')
                 .long("verbose")
                 .action(clap::ArgAction::SetTrue)
-                .help("Print verbose output")
+                .help("Print verbose output"),
         )
-        .subcommand(
-            Command::new("whoami")
-                .about("Print current user information")
-        )
-        .subcommand(
-            Command::new("bases")
-                .about("List all available bases")
-        )
+        .subcommand(Command::new("whoami").about("Print current user information"))
+        .subcommand(Command::new("bases").about("List all available bases"))
         .subcommand(
             Command::new("base")
                 .about("Base operations")
@@ -65,20 +59,11 @@ fn build_cli() -> Command {
                     Arg::new("base-id")
                         .value_name("BASE_ID")
                         .help("Base ID (e.g., appXXXXXXXXXXXXXX)")
-                        .required(true)
+                        .required(true),
                 )
-                .subcommand(
-                    Command::new("schema")
-                        .about("Print base schema")
-                )
-                .subcommand(
-                    Command::new("collaborators")
-                        .about("Print base collaborators")
-                )
-                .subcommand(
-                    Command::new("shares")
-                        .about("Print base shares")
-                )
+                .subcommand(Command::new("schema").about("Print base schema"))
+                .subcommand(Command::new("collaborators").about("Print base collaborators"))
+                .subcommand(Command::new("shares").about("Print base shares"))
                 .subcommand(
                     Command::new("table")
                         .about("Table operations")
@@ -86,7 +71,7 @@ fn build_cli() -> Command {
                             Arg::new("table-name")
                                 .value_name("TABLE_NAME")
                                 .help("Table name")
-                                .required(true)
+                                .required(true),
                         )
                         .subcommand(
                             Command::new("records")
@@ -96,14 +81,14 @@ fn build_cli() -> Command {
                                         .short('f')
                                         .long("formula")
                                         .value_name("FORMULA")
-                                        .help("Filter records with a formula")
+                                        .help("Filter records with a formula"),
                                 )
                                 .arg(
                                     Arg::new("view")
                                         .short('v')
                                         .long("view")
                                         .value_name("VIEW")
-                                        .help("Filter records by a view")
+                                        .help("Filter records by a view"),
                                 )
                                 .arg(
                                     Arg::new("limit")
@@ -111,7 +96,7 @@ fn build_cli() -> Command {
                                         .long("limit")
                                         .value_name("NUMBER")
                                         .help("Limit the number of records returned")
-                                        .value_parser(clap::value_parser!(u32))
+                                        .value_parser(clap::value_parser!(u32)),
                                 )
                                 .arg(
                                     Arg::new("sort")
@@ -119,7 +104,7 @@ fn build_cli() -> Command {
                                         .long("sort")
                                         .value_name("FIELD")
                                         .help("Sort records by field(s)")
-                                        .action(clap::ArgAction::Append)
+                                        .action(clap::ArgAction::Append),
                                 )
                                 .arg(
                                     Arg::new("field")
@@ -127,27 +112,24 @@ fn build_cli() -> Command {
                                         .long("field")
                                         .value_name("FIELD")
                                         .help("Limit output to certain field(s)")
-                                        .action(clap::ArgAction::Append)
-                                )
+                                        .action(clap::ArgAction::Append),
+                                ),
                         )
-                        .subcommand(
-                            Command::new("schema")
-                                .about("Print table schema")
-                        )
-                )
+                        .subcommand(Command::new("schema").about("Print table schema")),
+                ),
         )
 }
 
 async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
     // Get API key from various sources with priority order
     let api_key = get_api_key(&matches)?;
-    
+
     // Create client
     let mut config = Config::new(api_key);
     if matches.get_flag("verbose") {
         config = config.with_verbose(true);
     }
-    
+
     let client = Client::from_config(config);
 
     match matches.subcommand() {
@@ -164,7 +146,7 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
         Some(("base", base_matches)) => {
             let base_id = base_matches.get_one::<String>("base-id").unwrap();
             let base = client.base(base_id);
-            
+
             match base_matches.subcommand() {
                 Some(("schema", _)) => {
                     let schema = base.schema().await?;
@@ -179,33 +161,35 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
                 Some(("table", table_matches)) => {
                     let table_name = table_matches.get_one::<String>("table-name").unwrap();
                     let table = base.table(table_name);
-                    
+
                     match table_matches.subcommand() {
                         Some(("records", record_matches)) => {
                             let mut query = table.list();
-                            
+
                             if let Some(limit) = record_matches.get_one::<u32>("limit") {
                                 query = query.max_records(*limit);
                             }
-                            
+
                             if let Some(formula) = record_matches.get_one::<String>("formula") {
                                 query = query.filter_by_formula(formula);
                             }
-                            
+
                             if let Some(view) = record_matches.get_one::<String>("view") {
                                 query = query.view(view);
                             }
-                            
+
                             if let Some(fields) = record_matches.get_many::<String>("field") {
                                 let field_list: Vec<String> = fields.cloned().collect();
-                                query = query.fields(field_list);
+                                let field_refs: Vec<&str> =
+                                    field_list.iter().map(|s| s.as_str()).collect();
+                                query = query.fields(&field_refs);
                             }
-                            
+
                             if let Some(sorts) = record_matches.get_many::<String>("sort") {
                                 let sort_list: Vec<String> = sorts.cloned().collect();
                                 query = query.sort(sort_list);
                             }
-                            
+
                             let records = query.execute().await?;
                             println!("{}", serde_json::to_string_pretty(&records)?);
                         }
@@ -229,30 +213,30 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
             process::exit(1);
         }
     }
-    
+
     Ok(())
 }
 
 fn get_api_key(matches: &ArgMatches) -> Result<String, Box<dyn std::error::Error>> {
     // Priority order: CLI arg > key-file > key-env > environment variables
-    
+
     // 1. Direct CLI argument
     if let Some(key) = matches.get_one::<String>("key") {
         return Ok(key.clone());
     }
-    
+
     // 2. Key from file
     if let Some(key_file) = matches.get_one::<String>("key-file") {
         let key = std::fs::read_to_string(key_file)?.trim().to_string();
         return Ok(key);
     }
-    
+
     // 3. Key from specified environment variable
     if let Some(key_env) = matches.get_one::<String>("key-env") {
         let key = std::env::var(key_env)?;
         return Ok(key);
     }
-    
+
     // 4. Key from standard environment variables
     Config::api_key_from_env_or_file().map_err(|e| e.into())
 }

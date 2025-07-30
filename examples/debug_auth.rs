@@ -45,6 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(user_info) => {
             println!("✅ Success!");
             println!("User ID: {}", user_info.id);
+            println!("User Name: {}", user_info.name.as_deref().unwrap_or("N/A"));
             println!("User Email: {}", user_info.email);
         }
         Err(e) => {

@@ -17,7 +17,7 @@ async fn test_step4_real_api_authentication() {
         Ok(user_info) => {
             println!("✅ Authentication successful!");
             println!("User ID: {}", user_info.id);
-            println!("User Name: {}", user_info.name);
+            println!("User Name: {}", user_info.name.as_deref().unwrap_or("N/A"));
             println!("User Email: {}", user_info.email);
 
             // Verify we got valid user info
@@ -175,7 +175,11 @@ async fn test_step4_config_integration() {
     match client.whoami().await {
         Ok(user_info) => {
             println!("✅ Custom configured client works!");
-            println!("User: {} ({})", user_info.name, user_info.email);
+            println!(
+                "User: {} ({})",
+                user_info.name.as_deref().unwrap_or("N/A"),
+                user_info.email
+            );
             assert!(!user_info.id.is_empty(), "Should get valid user info");
         }
         Err(e) => {
@@ -189,7 +193,7 @@ fn test_step4_client_configuration() {
     // Test client creation and configuration without API calls
 
     // Test direct client creation
-    let client1 = Client::new("test_token_123".to_string());
+    let _client1 = Client::new("test_token_123".to_string());
     // Just verify it was created (we can't inspect internals)
 
     // Test config-based creation
@@ -198,12 +202,12 @@ fn test_step4_client_configuration() {
         .with_verbose(true)
         .with_endpoint_url("https://api.custom.airtable.com/v0");
 
-    let client2 = Client::from_config(config);
+    let _client2 = Client::from_config(config);
     // Verify creation succeeded
 
     // Test environment-based creation (if env vars available)
     if env::var("PERSONAL_ACCESS_TOKEN").is_ok() {
-        let client3 = Client::from_env().expect("Should create from environment");
+        let _client3 = Client::from_env().expect("Should create from environment");
         // Verify creation succeeded
     }
 
