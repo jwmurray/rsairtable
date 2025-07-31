@@ -11,7 +11,7 @@ use std::process;
 async fn main() {
     // Load environment variables from .env file if it exists
     dotenv::dotenv().ok();
-    
+
     let matches = build_cli().get_matches();
 
     if let Err(e) = run_command(matches).await {
@@ -212,6 +212,13 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
     if matches.get_flag("help-detail") {
         print_detailed_help();
         return Ok(());
+    }
+
+    // Debug: Show environment loading status
+    if matches.get_flag("verbose") {
+        eprintln!("DEBUG: Loading environment variables...");
+        eprintln!("DEBUG: PERSONAL_ACCESS_TOKEN present: {}", std::env::var("PERSONAL_ACCESS_TOKEN").is_ok());
+        eprintln!("DEBUG: BASE present: {}", std::env::var("BASE").is_ok());
     }
 
     // Get API key from various sources with priority order
