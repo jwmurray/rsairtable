@@ -11,7 +11,7 @@ use std::process;
 async fn main() {
     // Load .env file BEFORE clap processes arguments to ensure env vars are available
     dotenv::dotenv().ok();
-    
+
     let matches = build_cli().get_matches();
 
     if let Err(e) = run_command(matches).await {

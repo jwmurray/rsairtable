@@ -606,6 +606,13 @@ The tests are now properly set up for Test-Driven Development (TDD):
 - ✅ **Authentication**: Environment variable loading and API key validation working
 - ✅ **Error Handling**: Comprehensive error scenarios covered and tested
 
+#### **4.13 Optional BASE_ID Enhancement** ✅ **COMPLETED**
+- ✅ **Environment Variable Support**: `BASE` env var enables simplified commands
+- ✅ **Backward Compatibility**: Explicit `base-id` arguments still work
+- ✅ **User Experience**: Clear error messages with usage instructions
+- ✅ **Git Commit**: `66584c6` - Fix committed and pushed to GitHub
+- ✅ **Live Testing**: Confirmed working with real record creation
+
 #### **Test Suite Summary**:
 - **Unit Tests**: 3 passing (client creation, handles)
 - **Integration Tests**: 6 passing (authentication, config, API calls)
