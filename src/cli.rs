@@ -235,15 +235,21 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
         }
         Some(("base", base_matches)) => {
             let base_id = match base_matches.get_one::<String>("base-id") {
-                Some(id) => id,
+                Some(id) => id.clone(),
                 None => {
-                    eprintln!("Error: Base ID is required. Provide it via:");
-                    eprintln!("  - CLI argument: rsairtable base <BASE_ID> ...");
-                    eprintln!("  - Environment variable: export BASE=appXXXXXXXXXXXXXX");
-                    process::exit(1);
+                    // Try to get from environment variable as fallback
+                    match std::env::var("BASE") {
+                        Ok(env_base_id) => env_base_id,
+                        Err(_) => {
+                            eprintln!("Error: Base ID is required. Provide it via:");
+                            eprintln!("  - CLI argument: rsairtable base <BASE_ID> ...");
+                            eprintln!("  - Environment variable: export BASE=appXXXXXXXXXXXXXX");
+                            process::exit(1);
+                        }
+                    }
                 }
             };
-            let base = client.base(base_id);
+            let base = client.base(&base_id);
 
             match base_matches.subcommand() {
                 Some(("schema", _)) => {
