@@ -141,6 +141,12 @@ fn build_cli() -> Command {
                                         .help("Sort direction (asc/desc)")
                                         .value_parser(["asc", "desc"])
                                         .action(clap::ArgAction::Append),
+                                )
+                                .arg(
+                                    Arg::new("offset")
+                                        .long("offset")
+                                        .value_name("OFFSET_TOKEN")
+                                        .help("Continue from specified offset for pagination"),
                                 ),
                         )
                         .subcommand(Command::new("schema").about("Print table schema"))
@@ -293,6 +299,10 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
                             if let Some(sorts) = record_matches.get_many::<String>("sort") {
                                 let sort_list: Vec<String> = sorts.cloned().collect();
                                 query = query.sort(sort_list);
+                            }
+
+                            if let Some(offset) = record_matches.get_one::<String>("offset") {
+                                query = query.offset(Some(offset.clone()));
                             }
 
                             let records = query.execute().await?;
@@ -460,6 +470,12 @@ rsairtable base appXXXXXXXXXXXXXX table "TableName" schema  # Explicit base ID
 rsairtable base table "TableName" records              # Uses BASE env var
 rsairtable base appXXXXXXXXXXXXXX table "TableName" records  # Explicit base ID
 
+# Get specific record by ID (equivalent to a "get" command)
+rsairtable base table "TableName" records \\          # Uses BASE env var
+  -w "RECORD_ID()='recXXXXXXXXXXXXX'"
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records \\  # Explicit base ID
+  -w "RECORD_ID()='recXXXXXXXXXXXXX'"
+
 # List specific number of records
 rsairtable base table "TableName" records -n 10       # Uses BASE env var
 
@@ -542,13 +558,17 @@ rsairtable base appCustomers table "Customers" create \\
     "Revenue": 50000
   }}'
 
-# Example 2: Task Tracking
+# Example 2: Get Specific Matter by ID
+rsairtable base table "Matters" records \\
+  -w "RECORD_ID()='recrh79HILmmNEepC'"
+
+# Example 3: Task Tracking
 rsairtable base appTasks table "Tasks" records \\
   -w "AND(Status != 'Done', {{Assignee}} = 'John')" \\
   -S "Priority desc, Due Date asc" \\
   -n 20
 
-# Example 3: Inventory Update
+# Example 4: Inventory Update
 rsairtable base appInventory table "Products" update recProductXYZ \\
   -j '{{
     "Stock": 150,
@@ -557,7 +577,7 @@ rsairtable base appInventory table "Products" update recProductXYZ \\
   }}' \\
   --typecast
 
-# Example 4: Bulk Data Export to JSON
+# Example 5: Bulk Data Export to JSON
 rsairtable base appSales table "Orders" records \\
   -F "Order ID" -F "Customer" -F "Amount" -F "Date" \\
   > orders_export.json

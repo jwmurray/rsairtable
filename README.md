@@ -89,6 +89,10 @@ rsairtable base appXXXXXXXXXXXXXX schema
 # List records
 rsairtable base appXXXXXXXXXXXXXX table "TableName" records
 
+# Get specific record by ID
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records \
+  --formula "RECORD_ID()='recXXXXXXXXXXXXX'"
+
 # Create a record
 rsairtable base appXXXXXXXXXXXXXX table "TableName" create \
   -j '{"Name": "CLI Record", "Status": "Active"}'
@@ -223,6 +227,16 @@ rsairtable base <BASE_ID> table <TABLE> create -j <JSON> [--typecast]
 rsairtable base <BASE_ID> table <TABLE> update <RECORD_ID> -j <JSON> [--typecast]
 rsairtable base <BASE_ID> table <TABLE> delete <RECORD_ID>
 ```
+
+#### Record Retrieval Patterns
+
+```bash
+# List all records
+rsairtable base <BASE_ID> table <TABLE> records
+
+# Get specific record by ID (equivalent to a "get" command)
+rsairtable base <BASE_ID> table <TABLE> records \
+  --formula "RECORD_ID()='recXXXXXXXXXXXXX'"
 
 #### Advanced Filtering
 
