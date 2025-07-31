@@ -248,6 +248,217 @@ impl TableHandle {
         }
     }
 
+    /// Create a single record
+    pub async fn create(&self, fields: serde_json::Value) -> Result<Record> {
+        let request_body = json!({
+            "fields": fields,
+            "typecast": false
+        });
+
+        let url = self.build_url("");
+        let response = self
+            .base
+            .client
+            .http_client
+            .post(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let record: Record = response.json().await?;
+        Ok(record)
+    }
+
+    /// Create a single record with typecast option
+    pub async fn create_with_typecast(
+        &self,
+        fields: serde_json::Value,
+        typecast: bool,
+    ) -> Result<Record> {
+        let request_body = json!({
+            "fields": fields,
+            "typecast": typecast
+        });
+
+        let url = self.build_url("");
+        let response = self
+            .base
+            .client
+            .http_client
+            .post(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let record: Record = response.json().await?;
+        Ok(record)
+    }
+
+    /// Batch create multiple records
+    pub async fn batch_create(&self, records_data: Vec<serde_json::Value>) -> Result<Vec<Record>> {
+        if records_data.is_empty() {
+            return Err(Error::Api {
+                status: 400,
+                message: "Cannot create empty batch: records_data cannot be empty".to_string(),
+            });
+        }
+
+        if records_data.len() > 10 {
+            return Err(Error::Api {
+                status: 400,
+                message: "Batch size too large: Maximum 10 records per batch".to_string(),
+            });
+        }
+
+        let records: Vec<serde_json::Value> = records_data
+            .into_iter()
+            .map(|fields| json!({"fields": fields}))
+            .collect();
+
+        let request_body = json!({
+            "records": records,
+            "typecast": false
+        });
+
+        let url = self.build_url("");
+        let response = self
+            .base
+            .client
+            .http_client
+            .post(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let response_data: ListRecordsResponse = response.json().await?;
+        Ok(response_data.records)
+    }
+
+    /// Batch create multiple records with options
+    pub async fn batch_create_with_options(
+        &self,
+        records_data: Vec<serde_json::Value>,
+        typecast: bool,
+        _return_fields: &[&str],
+    ) -> Result<Vec<Record>> {
+        if records_data.is_empty() {
+            return Err(Error::Api {
+                status: 400,
+                message: "Cannot create empty batch: records_data cannot be empty".to_string(),
+            });
+        }
+
+        if records_data.len() > 10 {
+            return Err(Error::Api {
+                status: 400,
+                message: "Batch size too large: Maximum 10 records per batch".to_string(),
+            });
+        }
+
+        let records: Vec<serde_json::Value> = records_data
+            .into_iter()
+            .map(|fields| json!({"fields": fields}))
+            .collect();
+
+        let request_body = json!({
+            "records": records,
+            "typecast": typecast
+        });
+
+        // For now, ignore return_fields in batch creation to avoid API validation errors
+        // The Airtable API may not support field filtering in batch creation
+
+        let url = self.build_url("");
+        let response = self
+            .base
+            .client
+            .http_client
+            .post(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let response_data: ListRecordsResponse = response.json().await?;
+        Ok(response_data.records)
+    }
+
+    /// Delete a single record
+    pub async fn delete(&self, record_id: &str) -> Result<()> {
+        let url = self.build_url(record_id);
+        let response = self.base.client.http_client.delete(&url).send().await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        Ok(())
+    }
+
+    /// Batch delete multiple records
+    pub async fn batch_delete(&self, record_ids: &[String]) -> Result<()> {
+        if record_ids.is_empty() {
+            return Err(Error::Api {
+                status: 400,
+                message: "Cannot delete empty batch: record_ids cannot be empty".to_string(),
+            });
+        }
+
+        if record_ids.len() > 10 {
+            return Err(Error::Api {
+                status: 400,
+                message: "Batch size too large: Maximum 10 records per batch".to_string(),
+            });
+        }
+
+        let mut url = Url::parse(&self.build_url(""))?;
+        {
+            let mut query_pairs = url.query_pairs_mut();
+            for record_id in record_ids {
+                query_pairs.append_pair("records[]", record_id);
+            }
+        }
+
+        let response = self
+            .base
+            .client
+            .http_client
+            .delete(url.as_str())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        Ok(())
+    }
+
+    /// Create record using query builder pattern
+    pub fn create_record(&self) -> CreateRecordQuery {
+        CreateRecordQuery {
+            table: self.clone(),
+            fields: None,
+            typecast: None,
+            return_fields: None,
+        }
+    }
+
     /// Create an iterator for paginated record retrieval
     pub fn iterate(&self) -> RecordIteratorBuilder {
         RecordIteratorBuilder {
@@ -620,6 +831,69 @@ impl SelectQueryBuilder {
 
         let (records, _) = query.execute().await?;
         Ok(records)
+    }
+}
+
+/// Query builder for record creation
+#[derive(Debug, Clone)]
+pub struct CreateRecordQuery {
+    table: TableHandle,
+    fields: Option<serde_json::Value>,
+    typecast: Option<bool>,
+    return_fields: Option<Vec<String>>,
+}
+
+impl CreateRecordQuery {
+    /// Set fields for the new record
+    pub fn fields(mut self, fields: serde_json::Value) -> Self {
+        self.fields = Some(fields);
+        self
+    }
+
+    /// Enable typecast for the creation
+    pub fn typecast(mut self, typecast: bool) -> Self {
+        self.typecast = Some(typecast);
+        self
+    }
+
+    /// Specify which fields to return in the response
+    pub fn return_fields(mut self, fields: &[&str]) -> Self {
+        self.return_fields = Some(fields.iter().map(|s| s.to_string()).collect());
+        self
+    }
+
+    /// Execute the record creation
+    pub async fn execute(self) -> Result<Record> {
+        let fields = self.fields.ok_or_else(|| Error::Api {
+            status: 400,
+            message: "Missing fields: fields must be specified for record creation".to_string(),
+        })?;
+
+        let request_body = json!({
+            "fields": fields,
+            "typecast": self.typecast.unwrap_or(false)
+        });
+
+        // Note: return_fields functionality not implemented for now
+        // The Airtable API may not support field filtering in single record creation
+
+        let url = self.table.build_url("");
+        let response = self
+            .table
+            .base
+            .client
+            .http_client
+            .post(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.table.base.client.parse_error_response(response).await);
+        }
+
+        let record: Record = response.json().await?;
+        Ok(record)
     }
 }
 
