@@ -55,6 +55,13 @@ fn build_cli() -> Command {
                 .help("Print verbose output")
                 .global(true),
         )
+        .arg(
+            Arg::new("help-detail")
+                .long("help-detail")
+                .action(clap::ArgAction::SetTrue)
+                .help("Show detailed examples and usage patterns")
+                .global(true),
+        )
         .subcommand(Command::new("whoami").about("Print current user information"))
         .subcommand(Command::new("bases").about("List all available bases"))
         .subcommand(
@@ -64,8 +71,9 @@ fn build_cli() -> Command {
                 .arg(
                     Arg::new("base-id")
                         .value_name("BASE_ID")
-                        .help("Base ID (e.g., appXXXXXXXXXXXXXX)")
-                        .required(true),
+                        .help("Base ID (e.g., appXXXXXXXXXXXXXX) [env: BASE]")
+                        .env("BASE")
+                        .required(false),
                 )
                 .subcommand(Command::new("schema").about("Print base schema"))
                 .subcommand(Command::new("collaborators").about("Print base collaborators"))
@@ -197,6 +205,12 @@ fn build_cli() -> Command {
 }
 
 async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+    // Check for help-detail flag first
+    if matches.get_flag("help-detail") {
+        print_detailed_help();
+        return Ok(());
+    }
+
     // Get API key from various sources with priority order
     let api_key = get_api_key(&matches)?;
 
@@ -382,6 +396,218 @@ fn get_api_key(matches: &ArgMatches) -> Result<String, Box<dyn std::error::Error
 
     // 4. Key from standard environment variables
     Config::api_key_from_env_or_file().map_err(|e| e.into())
+}
+
+fn print_detailed_help() {
+    print!(
+        r#"
+🚀 RSAIRTABLE - DETAILED EXAMPLES AND USAGE GUIDE
+===============================================
+
+This is a comprehensive Rust client for the Airtable API, compatible with pyairtable.
+Below are practical examples for all major operations.
+
+📋 SETUP AND AUTHENTICATION
+---------------------------
+
+# Method 1: Environment variable (recommended)
+export PERSONAL_ACCESS_TOKEN="patXXXXXXXXXXXXXX"
+export BASE="appXXXXXXXXXXXXXX"
+
+# Method 2: CLI argument
+rsairtable --key "patXXXXXXXXXXXXXX" whoami
+
+# Method 3: Key file
+echo "patXXXXXXXXXXXXXX" > ~/.airtable_key
+rsairtable --key-file ~/.airtable_key whoami
+
+👤 USER INFORMATION
+------------------
+
+# Get current user information
+rsairtable whoami
+
+📚 BASE OPERATIONS
+-----------------
+
+# List all bases you have access to
+rsairtable bases
+
+# Get base schema (all tables and fields)
+rsairtable base appXXXXXXXXXXXXXX schema
+
+# Generate Rust structs from base schema (ORM)
+rsairtable base appXXXXXXXXXXXXXX orm > models.rs
+
+🗂️  TABLE OPERATIONS
+-------------------
+
+# Get table schema
+rsairtable base appXXXXXXXXXXXXXX table "TableName" schema
+
+📄 RECORD OPERATIONS
+-------------------
+
+# List all records (default: first 100)
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records
+
+# List specific number of records
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records -n 10
+
+# List records with filtering
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records -w "Status = 'Active'"
+
+# List records from specific view
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records -u "My View"
+
+# List records with sorting
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records -S "Name asc"
+
+# List specific fields only
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records -F "Name" -F "Status"
+
+# Get records in descending order
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records -D -n 5
+
+✏️  RECORD CREATION
+------------------
+
+# Create a simple record
+rsairtable base appXXXXXXXXXXXXXX table "TableName" create \\
+  -j '{{"Name": "New Record", "Status": "Active"}}'
+
+# Create record with typecast (automatic type conversion)
+rsairtable base appXXXXXXXXXXXXXX table "TableName" create \\
+  -j '{{"Name": "Auto Convert", "Date": "2024-01-15"}}' \\
+  --typecast
+
+# Create record with multiple field types
+rsairtable base appXXXXXXXXXXXXXX table "TableName" create \\
+  -j '{{
+    "Name": "Complex Record",
+    "Status": "In Progress", 
+    "Priority": 5,
+    "Notes": "This is a detailed note",
+    "Tags": ["urgent", "review"]
+  }}'
+
+📝 RECORD UPDATES
+----------------
+
+# Update specific fields of a record
+rsairtable base appXXXXXXXXXXXXXX table "TableName" update recXXXXXXXXXXXXX \\
+  -j '{{"Status": "Completed", "Notes": "Finished today"}}'
+
+# Update with typecast
+rsairtable base appXXXXXXXXXXXXXX table "TableName" update recXXXXXXXXXXXXX \\
+  -j '{{"Priority": "High", "Due Date": "2024-12-31"}}' \\
+  --typecast
+
+🗑️  RECORD DELETION
+------------------
+
+# Delete a specific record
+rsairtable base appXXXXXXXXXXXXXX table "TableName" delete recXXXXXXXXXXXXX
+
+🏢 ADVANCED FEATURES
+-------------------
+
+# Enterprise operations (limitations noted)
+rsairtable enterprise audit-log
+rsairtable enterprise users
+
+# Base collaboration info (limitations noted)
+rsairtable base appXXXXXXXXXXXXXX collaborators
+rsairtable base appXXXXXXXXXXXXXX shares
+
+🔗 REAL-WORLD EXAMPLES
+---------------------
+
+# Example 1: Customer Management
+rsairtable base appCustomers table "Customers" create \\
+  -j '{{
+    "Company": "Tech Corp", 
+    "Contact": "John Smith",
+    "Email": "john@techcorp.com",
+    "Status": "Active",
+    "Revenue": 50000
+  }}'
+
+# Example 2: Task Tracking
+rsairtable base appTasks table "Tasks" records \\
+  -w "AND(Status != 'Done', {{Assignee}} = 'John')" \\
+  -S "Priority desc, Due Date asc" \\
+  -n 20
+
+# Example 3: Inventory Update
+rsairtable base appInventory table "Products" update recProductXYZ \\
+  -j '{{
+    "Stock": 150,
+    "Last Updated": "2024-01-15T10:30:00Z",
+    "Status": "In Stock"
+  }}' \\
+  --typecast
+
+# Example 4: Bulk Data Export to JSON
+rsairtable base appSales table "Orders" records \\
+  -F "Order ID" -F "Customer" -F "Amount" -F "Date" \\
+  > orders_export.json
+
+🚀 RUST CODE GENERATION
+-----------------------
+
+# Generate complete Rust structs for your base
+rsairtable base appXXXXXXXXXXXXXX orm > src/airtable_models.rs
+
+# This creates structs like:
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Customer {{
+    pub id: String,
+    pub created_time: Option<String>,
+    pub company: Option<String>,
+    pub contact: Option<String>,
+    pub email: Option<String>,
+    // ... all your fields
+}}
+
+⚠️  API LIMITATIONS
+------------------
+
+Some advanced features are not available via Airtable's public API:
+• Field creation/deletion (use Airtable web interface)
+• Direct file uploads (use URL-based attachments)
+• Base collaborator management (use Airtable web interface)
+• Enterprise audit logs (use Enterprise Admin Panel)
+
+🛠️  TROUBLESHOOTING
+------------------
+
+# Test authentication
+rsairtable whoami
+
+# Check base access
+rsairtable bases
+
+# Validate table name
+rsairtable base appXXXXXXXXXXXXXX schema | grep -i "tablename"
+
+# Test with verbose output
+rsairtable -v base appXXXXXXXXXXXXXX table "TableName" records -n 1
+
+📖 MORE HELP
+-----------
+
+# Basic help
+rsairtable --help
+
+# Command-specific help
+rsairtable base --help
+rsairtable base <BASE_ID> table --help
+rsairtable base <BASE_ID> table <TABLE_NAME> --help
+
+For more information, visit: https://github.com/your-repo/rsairtable
+"#
+    );
 }
 
 /// Generate Rust structs for all tables in a base (ORM-like functionality)
