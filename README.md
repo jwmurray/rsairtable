@@ -11,6 +11,7 @@ A comprehensive Rust client for the Airtable API, fully compatible with pyairtab
 - **🔄 Full pyairtable Compatibility**: Drop-in replacement for Python pyairtable functionality
 - **📊 Complete CRUD Operations**: Create, read, update, delete records with full type safety
 - **🔍 Advanced Filtering**: Support for formulas, views, sorting, and field selection
+- **📄 Automatic Pagination**: Retrieve all records from large tables with `--all` flag
 - **🏗️ ORM Code Generation**: Automatically generate Rust structs from Airtable schemas
 - **🖥️ CLI Interface**: Comprehensive command-line tool for all operations
 - **🚀 High Performance**: Built with async/await and reqwest for optimal performance
@@ -99,6 +100,55 @@ rsairtable base appXXXXXXXXXXXXXX table "TableName" create \
 
 # Generate Rust structs
 rsairtable base appXXXXXXXXXXXXXX orm > models.rs
+
+# Pagination - get ALL records from a table
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records --all
+
+# Manual pagination with offset
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records --offset "itrABC123"
+
+# Verbose pagination with progress
+rsairtable -v base appXXXXXXXXXXXXXX table "TableName" records --all
+```
+
+### Pagination
+
+The CLI supports both automatic and manual pagination for retrieving large datasets:
+
+- **Default**: Returns first 100 records only
+- **`--all`**: Automatically retrieves ALL records from the table
+- **`--offset`**: Continue from a specific pagination token
+- **`-v`**: Verbose mode shows pagination progress
+
+#### Pagination Examples
+
+```bash
+# Get all records automatically (may take time for large tables)
+rsairtable base table "Customers" records --all
+
+# Get all records with filtering
+rsairtable base table "Customers" records --all -w "Status = 'Active'"
+
+# Get all records with specific fields only
+rsairtable base table "Customers" records --all -F "Name" -F "Email"
+
+# Manual pagination - get first batch and continue with offset
+rsairtable base table "Customers" records > batch1.json
+rsairtable base table "Customers" records --offset "itrXYZ123" > batch2.json
+
+# Verbose mode shows progress for large datasets
+rsairtable -v base table "Customers" records --all
+```
+
+#### Record Retrieval Patterns
+
+```bash
+# List all records
+rsairtable base <BASE_ID> table <TABLE> records
+
+# Get specific record by ID (equivalent to a "get" command)
+rsairtable base <BASE_ID> table <TABLE> records \
+  --formula "RECORD_ID()='recXXXXXXXXXXXXX'"
 ```
 
 ## 📚 Documentation
@@ -388,6 +438,56 @@ rsairtable is designed as a drop-in replacement for Python's pyairtable:
 | `Table.batch_update()` | `table.batch_update()` | ✅ |
 | `Base.schema()` | `base.schema()` | ✅ |
 | CLI commands | CLI commands | ✅ |
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+#### Pagination and Large Datasets
+
+**Problem**: Only getting 100 records when you expect more
+```bash
+# This only returns first 100 records
+rsairtable base table "LargeTable" records
+```
+
+**Solution**: Use the `--all` flag for automatic pagination
+```bash
+# This retrieves ALL records from the table
+rsairtable base table "LargeTable" records --all
+```
+
+**Performance Tips for Large Tables**:
+- Use `-v` (verbose) flag to monitor progress
+- Filter data when possible: `--all -w "Status = 'Active'"`
+- Select only needed fields: `--all -F "Name" -F "Email"`
+- Consider using `--offset` for manual pagination control
+
+#### Offset Token Continuation
+
+**Problem**: Need to continue from where a previous request left off
+
+**Solution**: Use the offset token from the response
+```bash
+# First request returns [records_array, "itrABC123/recXYZ"]
+rsairtable base table "Table" records > batch1.json
+
+# Continue from that offset
+rsairtable base table "Table" records --offset "itrABC123/recXYZ" > batch2.json
+```
+
+#### Memory Usage with --all Flag
+
+The `--all` flag loads all records into memory before outputting. For very large tables (10,000+ records), consider:
+- Using manual pagination with `--offset`
+- Filtering to reduce dataset size
+- Processing data in smaller batches
+
+### Performance Tips
+
+- Use `--all` with filters to reduce data volume
+- Combine with `jq` for efficient data processing
+- Use verbose mode (`-v`) to monitor progress on large operations
 
 ## 🛠️ Development
 

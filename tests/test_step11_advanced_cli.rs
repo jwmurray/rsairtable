@@ -9,11 +9,10 @@ use std::process::Command;
 /// - ORM code generation
 /// - Full CLI workflow integration
 
-fn get_test_env_vars() -> (String, String) {
-    let token = env::var("PERSONAL_ACCESS_TOKEN")
-        .expect("PERSONAL_ACCESS_TOKEN environment variable must be set for tests");
-    let base_id = env::var("BASE").expect("BASE environment variable must be set for tests");
-    (token, base_id)
+fn get_test_env_vars() -> Option<(String, String)> {
+    let token = env::var("PERSONAL_ACCESS_TOKEN").ok()?;
+    let base_id = env::var("BASE").ok()?;
+    Some((token, base_id))
 }
 
 #[cfg(test)]
@@ -22,7 +21,10 @@ mod step11_tests {
 
     #[test]
     fn test_step11_base_collaborators_limitation_demo() {
-        let (_token, base_id) = get_test_env_vars();
+        let Some((_token, base_id)) = get_test_env_vars() else {
+            println!("Skipping test: Environment variables not set");
+            return;
+        };
 
         println!("🧪 Testing base collaborators command (API limitation demo)");
 
@@ -52,7 +54,10 @@ mod step11_tests {
 
     #[test]
     fn test_step11_base_shares_limitation_demo() {
-        let (_token, base_id) = get_test_env_vars();
+        let Some((_token, base_id)) = get_test_env_vars() else {
+            println!("Skipping test: Environment variables not set");
+            return;
+        };
 
         println!("🧪 Testing base shares command (API limitation demo)");
 
@@ -82,7 +87,10 @@ mod step11_tests {
 
     #[test]
     fn test_step11_orm_generation() {
-        let (_token, base_id) = get_test_env_vars();
+        let Some((_token, base_id)) = get_test_env_vars() else {
+            println!("Skipping test: Environment variables not set");
+            return;
+        };
 
         println!("🧪 Testing ORM code generation");
 
@@ -134,7 +142,10 @@ mod step11_tests {
 
     #[test]
     fn test_step11_enterprise_audit_log_limitation() {
-        let (_token, _base_id) = get_test_env_vars();
+        let Some((_token, _base_id)) = get_test_env_vars() else {
+            println!("Skipping test: Environment variables not set");
+            return;
+        };
 
         println!("🧪 Testing enterprise audit-log command (API limitation demo)");
 
@@ -163,7 +174,10 @@ mod step11_tests {
 
     #[test]
     fn test_step11_enterprise_users_limitation() {
-        let (_token, _base_id) = get_test_env_vars();
+        let Some((_token, _base_id)) = get_test_env_vars() else {
+            println!("Skipping test: Environment variables not set");
+            return;
+        };
 
         println!("🧪 Testing enterprise users command (API limitation demo)");
 
@@ -192,7 +206,10 @@ mod step11_tests {
 
     #[test]
     fn test_step11_enterprise_claims_limitation() {
-        let (_token, _base_id) = get_test_env_vars();
+        let Some((_token, _base_id)) = get_test_env_vars() else {
+            println!("Skipping test: Environment variables not set");
+            return;
+        };
 
         println!("🧪 Testing enterprise claims command (API limitation demo)");
 
@@ -338,7 +355,10 @@ mod step11_integration_tests {
 
     #[test]
     fn test_step11_complete_workflow_demo() {
-        let (token, base_id) = get_test_env_vars();
+        let Some((_token, base_id)) = get_test_env_vars() else {
+            println!("Skipping test: Environment variables not set");
+            return;
+        };
 
         println!("🧪 Testing complete Step 11 workflow");
 

@@ -147,6 +147,13 @@ fn build_cli() -> Command {
                                         .long("offset")
                                         .value_name("OFFSET_TOKEN")
                                         .help("Continue from specified offset for pagination"),
+                                )
+                                .arg(
+                                    Arg::new("all")
+                                        .long("all")
+                                        .action(clap::ArgAction::SetTrue)
+                                        .help("Retrieve all records by automatically handling pagination")
+                                        .conflicts_with_all(["offset", "limit"]),
                                 ),
                         )
                         .subcommand(Command::new("schema").about("Print table schema"))
@@ -305,8 +312,102 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
                                 query = query.offset(Some(offset.clone()));
                             }
 
-                            let records = query.execute().await?;
-                            println!("{}", serde_json::to_string_pretty(&records)?);
+                            if record_matches.get_flag("all") {
+                                // Implement automatic pagination to retrieve all records
+                                let mut all_records = Vec::new();
+                                let mut current_offset: Option<String> = None;
+                                let verbose = matches.get_flag("verbose");
+
+                                if verbose {
+                                    eprintln!("Starting pagination to retrieve all records...");
+                                }
+
+                                loop {
+                                    let mut current_query = table.list();
+
+                                    // Apply all the same filters as the base query
+                                    if let Some(formula) =
+                                        record_matches.get_one::<String>("formula")
+                                    {
+                                        current_query = current_query.filter_by_formula(formula);
+                                    }
+                                    if let Some(view) = record_matches.get_one::<String>("view") {
+                                        current_query = current_query.view(view);
+                                    }
+                                    if let Some(fields) = record_matches.get_many::<String>("field")
+                                    {
+                                        let field_list: Vec<String> = fields.cloned().collect();
+                                        let field_refs: Vec<&str> =
+                                            field_list.iter().map(|s| s.as_str()).collect();
+                                        current_query = current_query.fields(&field_refs);
+                                    }
+                                    if let Some(sorts) = record_matches.get_many::<String>("sort") {
+                                        let sort_list: Vec<String> = sorts.cloned().collect();
+                                        current_query = current_query.sort(sort_list);
+                                    }
+
+                                    // Apply current offset
+                                    if let Some(ref offset) = current_offset {
+                                        current_query = current_query.offset(Some(offset.clone()));
+                                    }
+
+                                    // Execute query for this batch
+                                    let (batch_records, next_offset) =
+                                        current_query.execute().await?;
+
+                                    let batch_count = batch_records.len();
+
+                                    // Add batch to our collection
+                                    all_records.extend(batch_records);
+
+                                    if verbose {
+                                        eprintln!(
+                                            "Retrieved {} records (total: {})",
+                                            batch_count,
+                                            all_records.len()
+                                        );
+                                    }
+
+                                    // Check if we should continue
+                                    match next_offset {
+                                        Some(offset) if !offset.is_empty() => {
+                                            current_offset = Some(offset);
+                                            if verbose {
+                                                eprintln!("Fetching more records...");
+                                            }
+                                        }
+                                        _ => break, // No more pages
+                                    }
+                                }
+
+                                if verbose {
+                                    eprintln!(
+                                        "Completed! Retrieved {} records total",
+                                        all_records.len()
+                                    );
+                                }
+
+                                // Output all records in the same format as regular queries
+                                let result = (all_records, None::<String>);
+                                println!("{}", serde_json::to_string_pretty(&result)?);
+                            } else {
+                                let records = query.execute().await?;
+
+                                if matches.get_flag("verbose") {
+                                    let record_count = records.0.len();
+                                    let has_more = records.1.is_some();
+                                    if has_more {
+                                        eprintln!("Retrieved {} records (more available, use --all or --offset)", record_count);
+                                    } else {
+                                        eprintln!(
+                                            "Retrieved {} records (all records from table)",
+                                            record_count
+                                        );
+                                    }
+                                }
+
+                                println!("{}", serde_json::to_string_pretty(&records)?);
+                            }
                         }
                         Some(("schema", _)) => {
                             let schema = table.schema().await?;
@@ -494,6 +595,42 @@ rsairtable base appXXXXXXXXXXXXXX table "TableName" records -F "Name" -F "Status
 # Get records in descending order
 rsairtable base appXXXXXXXXXXXXXX table "TableName" records -D -n 5
 
+📖 PAGINATION - RETRIEVING ALL RECORDS
+--------------------------------------
+
+# Automatic pagination - get ALL records from a table (may take time for large tables)
+rsairtable base table "TableName" records --all            # Uses BASE env var
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records --all  # Explicit base ID
+
+# Get all records with filtering (retrieve all matching records)
+rsairtable base table "TableName" records --all -w "Status = 'Active'"
+rsairtable base table "TableName" records --all -F "Name" -F "Email"
+
+# Manual pagination - continue from specific offset token
+rsairtable base table "TableName" records --offset "itrABC123/recXYZ789"
+
+# Verbose mode - shows pagination progress
+rsairtable -v base table "TableName" records --all
+# Output: "Starting pagination to retrieve all records..."
+#         "Retrieved 100 records (total: 100)"
+#         "Fetching more records..."
+#         "Retrieved 50 records (total: 150)"
+#         "Completed! Retrieved 150 records total"
+
+# Combine pagination with all filtering options
+rsairtable -v base table "Customers" records --all \\
+  -w "Status = 'Active'" \\
+  -F "Name" -F "Email" -F "Status" \\
+  -u "Customer View" \\
+  -S "Name"
+
+⚠️  PAGINATION NOTES:
+- Default: Returns first 100 records only
+- --all: Automatically retrieves ALL records (can be thousands)
+- --offset: Manual pagination using token from previous request  
+- --all conflicts with --limit and --offset
+- Use -v (verbose) to see progress for large datasets
+
 ✏️  RECORD CREATION
 ------------------
 
@@ -581,6 +718,24 @@ rsairtable base appInventory table "Products" update recProductXYZ \\
 rsairtable base appSales table "Orders" records \\
   -F "Order ID" -F "Customer" -F "Amount" -F "Date" \\
   > orders_export.json
+
+# Example 6: Complete Data Migration - Get ALL records with pagination
+rsairtable -v base table "Customers" records --all \\
+  -F "Name" -F "Email" -F "Status" \\
+  -w "Status != 'Deleted'" \\
+  > complete_customer_export.json
+
+# Example 7: Large Dataset Processing with Progress
+rsairtable -v base appInventory table "Products" records --all \\
+  | jq '.[[]][].fields | {{name: .Name, price: .Price, stock: .Stock}}' \\
+  > inventory_summary.json
+
+# Example 8: Continuing from Previous Export (Manual Pagination)
+# First, get initial batch and note the offset in response[1]
+rsairtable base table "LargeTable" records -n 100 > batch1.json
+# Then continue from that offset
+rsairtable base table "LargeTable" records \\
+  --offset "itrABC123/recXYZ789" > batch2.json
 
 🚀 RUST CODE GENERATION
 -----------------------
