@@ -192,8 +192,8 @@ From pyairtable success:
 - [x] Setup Foundation (config + auth + models) ✅ COMPLETED
 - [x] Record Retrieval: get(), all(), iterate(), first() ✅ COMPLETED
 - [x] Record Creation: create(), batch_create() ✅ COMPLETED
-- [ ] Record Updates: update(), batch_update(), batch_upsert()
-- [ ] Record Deletion: delete(), batch_delete()
+- [x] Record Updates: update(), batch_update(), batch_upsert() ✅ COMPLETED
+- [x] Record Deletion: delete(), batch_delete() ✅ COMPLETED
 - [ ] Advanced Features: comments, schema, attachments
 
 ### Phase 3: CLI Interface Implementation  

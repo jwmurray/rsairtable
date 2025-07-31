@@ -398,6 +398,146 @@ impl TableHandle {
         Ok(response_data.records)
     }
 
+    /// Update a single record
+    pub async fn update(&self, record_id: &str, fields: serde_json::Value) -> Result<Record> {
+        let request_body = json!({
+            "fields": fields,
+            "typecast": false
+        });
+
+        let url = self.build_url(record_id);
+        let response = self
+            .base
+            .client
+            .http_client
+            .patch(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let record: Record = response.json().await?;
+        Ok(record)
+    }
+
+    /// Update a single record with typecast option
+    pub async fn update_with_typecast(
+        &self,
+        record_id: &str,
+        fields: serde_json::Value,
+        typecast: bool,
+    ) -> Result<Record> {
+        let request_body = json!({
+            "fields": fields,
+            "typecast": typecast
+        });
+
+        let url = self.build_url(record_id);
+        let response = self
+            .base
+            .client
+            .http_client
+            .patch(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let record: Record = response.json().await?;
+        Ok(record)
+    }
+
+    /// Batch update multiple records
+    pub async fn batch_update(&self, records_data: Vec<serde_json::Value>) -> Result<Vec<Record>> {
+        if records_data.is_empty() {
+            return Err(Error::Api {
+                status: 400,
+                message: "Cannot update empty batch: records_data cannot be empty".to_string(),
+            });
+        }
+
+        if records_data.len() > 10 {
+            return Err(Error::Api {
+                status: 400,
+                message: "Batch size too large: Maximum 10 records per batch".to_string(),
+            });
+        }
+
+        let request_body = json!({
+            "records": records_data,
+            "typecast": false
+        });
+
+        let url = self.build_url("");
+        let response = self
+            .base
+            .client
+            .http_client
+            .patch(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let response_data: ListRecordsResponse = response.json().await?;
+        Ok(response_data.records)
+    }
+
+    /// Batch upsert multiple records (create or update based on matching fields)
+    pub async fn batch_upsert(
+        &self,
+        records_data: Vec<serde_json::Value>,
+        fields_to_merge_on: &[&str],
+    ) -> Result<Vec<Record>> {
+        if records_data.is_empty() {
+            return Err(Error::Api {
+                status: 400,
+                message: "Cannot upsert empty batch: records_data cannot be empty".to_string(),
+            });
+        }
+
+        if records_data.len() > 10 {
+            return Err(Error::Api {
+                status: 400,
+                message: "Batch size too large: Maximum 10 records per batch".to_string(),
+            });
+        }
+
+        let request_body = json!({
+            "records": records_data,
+            "performUpsert": {
+                "fieldsToMergeOn": fields_to_merge_on
+            },
+            "typecast": false
+        });
+
+        let url = self.build_url("");
+        let response = self
+            .base
+            .client
+            .http_client
+            .patch(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let response_data: ListRecordsResponse = response.json().await?;
+        Ok(response_data.records)
+    }
+
     /// Delete a single record
     pub async fn delete(&self, record_id: &str) -> Result<()> {
         let url = self.build_url(record_id);
@@ -453,6 +593,17 @@ impl TableHandle {
     pub fn create_record(&self) -> CreateRecordQuery {
         CreateRecordQuery {
             table: self.clone(),
+            fields: None,
+            typecast: None,
+            return_fields: None,
+        }
+    }
+
+    /// Update record using query builder pattern
+    pub fn update_record(&self, record_id: &str) -> UpdateRecordQuery {
+        UpdateRecordQuery {
+            table: self.clone(),
+            record_id: record_id.to_string(),
             fields: None,
             typecast: None,
             return_fields: None,
@@ -884,6 +1035,70 @@ impl CreateRecordQuery {
             .client
             .http_client
             .post(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.table.base.client.parse_error_response(response).await);
+        }
+
+        let record: Record = response.json().await?;
+        Ok(record)
+    }
+}
+
+/// Query builder for record updates
+#[derive(Debug, Clone)]
+pub struct UpdateRecordQuery {
+    table: TableHandle,
+    record_id: String,
+    fields: Option<serde_json::Value>,
+    typecast: Option<bool>,
+    return_fields: Option<Vec<String>>,
+}
+
+impl UpdateRecordQuery {
+    /// Set fields to update
+    pub fn fields(mut self, fields: serde_json::Value) -> Self {
+        self.fields = Some(fields);
+        self
+    }
+
+    /// Enable typecast for the update
+    pub fn typecast(mut self, typecast: bool) -> Self {
+        self.typecast = Some(typecast);
+        self
+    }
+
+    /// Specify which fields to return in the response
+    pub fn return_fields(mut self, fields: &[&str]) -> Self {
+        self.return_fields = Some(fields.iter().map(|s| s.to_string()).collect());
+        self
+    }
+
+    /// Execute the record update
+    pub async fn execute(self) -> Result<Record> {
+        let fields = self.fields.ok_or_else(|| Error::Api {
+            status: 400,
+            message: "Missing fields: fields must be specified for record update".to_string(),
+        })?;
+
+        let request_body = json!({
+            "fields": fields,
+            "typecast": self.typecast.unwrap_or(false)
+        });
+
+        // Note: return_fields functionality not implemented for now
+        // The Airtable API may not support field filtering in single record updates
+
+        let url = self.table.build_url(&self.record_id);
+        let response = self
+            .table
+            .base
+            .client
+            .http_client
+            .patch(&url)
             .json(&request_body)
             .send()
             .await?;
