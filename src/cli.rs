@@ -21,7 +21,7 @@ fn build_cli() -> Command {
     Command::new("rsairtable")
         .version("0.1.0")
         .about("Rust client for Airtable API - compatible with pyairtable")
-        .after_help("HINT: Use 'rsairtable base <BASE_ID> --help' to see table operations, then 'rsairtable base <BASE_ID> table <TABLE_NAME> --help' for record operations")
+        .after_help("HINT: Use 'rsairtable base [BASE_ID] --help' to see table operations, then 'rsairtable base [BASE_ID] table <TABLE_NAME> --help' for record operations\nBASE_ID can be omitted if BASE environment variable is set")
         .arg(
             Arg::new("key")
                 .short('k')
@@ -67,7 +67,7 @@ fn build_cli() -> Command {
         .subcommand(
             Command::new("base")
                 .about("Base operations")
-                .after_help("HINT: Use 'rsairtable base <BASE_ID> --help' to see table and record operations")
+                .after_help("HINT: Use 'rsairtable base [BASE_ID] --help' to see table and record operations\nBASE_ID can be omitted if BASE environment variable is set")
                 .arg(
                     Arg::new("base-id")
                         .value_name("BASE_ID")
@@ -82,7 +82,7 @@ fn build_cli() -> Command {
                 .subcommand(
                     Command::new("table")
                         .about("Table operations")
-                        .after_help("HINT: Use 'rsairtable base <BASE_ID> table <TABLE_NAME> --help' to see record operations (create, update, delete, records)")
+                        .after_help("HINT: Use 'rsairtable base [BASE_ID] table <TABLE_NAME> --help' to see record operations (create, update, delete, records)\nBASE_ID can be omitted if BASE environment variable is set")
                         .arg(
                             Arg::new("table-name")
                                 .value_name("TABLE_NAME")
@@ -234,7 +234,15 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
             }
         }
         Some(("base", base_matches)) => {
-            let base_id = base_matches.get_one::<String>("base-id").unwrap();
+            let base_id = match base_matches.get_one::<String>("base-id") {
+                Some(id) => id,
+                None => {
+                    eprintln!("Error: Base ID is required. Provide it via:");
+                    eprintln!("  - CLI argument: rsairtable base <BASE_ID> ...");
+                    eprintln!("  - Environment variable: export BASE=appXXXXXXXXXXXXXX");
+                    process::exit(1);
+                }
+            };
             let base = client.base(base_id);
 
             match base_matches.subcommand() {
@@ -434,25 +442,29 @@ rsairtable whoami
 rsairtable bases
 
 # Get base schema (all tables and fields)
-rsairtable base appXXXXXXXXXXXXXX schema
+rsairtable base schema                          # Uses BASE env var
+rsairtable base appXXXXXXXXXXXXXX schema        # Explicit base ID
 
 # Generate Rust structs from base schema (ORM)
-rsairtable base appXXXXXXXXXXXXXX orm > models.rs
+rsairtable base orm > models.rs                # Uses BASE env var
+rsairtable base appXXXXXXXXXXXXXX orm > models.rs   # Explicit base ID
 
 🗂️  TABLE OPERATIONS
 -------------------
 
 # Get table schema
-rsairtable base appXXXXXXXXXXXXXX table "TableName" schema
+rsairtable base table "TableName" schema               # Uses BASE env var
+rsairtable base appXXXXXXXXXXXXXX table "TableName" schema  # Explicit base ID
 
 📄 RECORD OPERATIONS
 -------------------
 
 # List all records (default: first 100)
-rsairtable base appXXXXXXXXXXXXXX table "TableName" records
+rsairtable base table "TableName" records              # Uses BASE env var
+rsairtable base appXXXXXXXXXXXXXX table "TableName" records  # Explicit base ID
 
 # List specific number of records
-rsairtable base appXXXXXXXXXXXXXX table "TableName" records -n 10
+rsairtable base table "TableName" records -n 10       # Uses BASE env var
 
 # List records with filtering
 rsairtable base appXXXXXXXXXXXXXX table "TableName" records -w "Status = 'Active'"
@@ -473,11 +485,11 @@ rsairtable base appXXXXXXXXXXXXXX table "TableName" records -D -n 5
 ------------------
 
 # Create a simple record
-rsairtable base appXXXXXXXXXXXXXX table "TableName" create \\
+rsairtable base table "TableName" create \\              # Uses BASE env var
   -j '{{"Name": "New Record", "Status": "Active"}}'
 
-# Create record with typecast (automatic type conversion)
-rsairtable base appXXXXXXXXXXXXXX table "TableName" create \\
+# Create record with typecast (automatic type conversion)  
+rsairtable base table "TableName" create \\              # Uses BASE env var
   -j '{{"Name": "Auto Convert", "Date": "2024-01-15"}}' \\
   --typecast
 
