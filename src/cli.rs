@@ -237,16 +237,12 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
             let base_id = match base_matches.get_one::<String>("base-id") {
                 Some(id) => id.clone(),
                 None => {
-                    // Try to get from environment variable as fallback
-                    match std::env::var("BASE") {
-                        Ok(env_base_id) => env_base_id,
-                        Err(_) => {
-                            eprintln!("Error: Base ID is required. Provide it via:");
-                            eprintln!("  - CLI argument: rsairtable base <BASE_ID> ...");
-                            eprintln!("  - Environment variable: export BASE=appXXXXXXXXXXXXXX");
-                            process::exit(1);
-                        }
-                    }
+                    // This fallback should rarely be reached since clap handles env("BASE") automatically
+                    // But keeping it for explicit error handling if BASE env var is not set
+                    eprintln!("Error: Base ID is required. Provide it via:");
+                    eprintln!("  - CLI argument: rsairtable base <BASE_ID> ...");
+                    eprintln!("  - Environment variable: export BASE=appXXXXXXXXXXXXXX");
+                    process::exit(1);
                 }
             };
             let base = client.base(&base_id);
