@@ -151,6 +151,18 @@ rsairtable base <BASE_ID> table <TABLE> records \
   --formula "RECORD_ID()='recXXXXXXXXXXXXX'"
 ```
 
+```bash
+#Create mapping of non-null airtable ids to clio ids
+rsairtable base table Matters records --all -F "Clio Matter ID" | jq -r '.[0] | map(select(.fields."Clio Ma
+tter ID" != null)) | map({(.id): .fields."Clio Matter ID"}) | add' > mapping_no_nulls_jq.json
+```
+
+```bash
+# Create mapping of all airetable ids to clio ids
+rsairtable base table Matters records --all -F "Clio Matter ID" | jq -r '.[0] | map({(.id): .fields."Clio M
+atter ID"}) | add' > mapping.json
+```
+
 ## 📚 Documentation
 
 ### Detailed Examples
