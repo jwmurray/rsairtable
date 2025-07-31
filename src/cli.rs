@@ -237,17 +237,9 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
             }
         }
         Some(("base", base_matches)) => {
-            let base_id = match base_matches.get_one::<String>("base-id") {
-                Some(id) => id.clone(),
-                None => {
-                    // This fallback should rarely be reached since clap handles env("BASE") automatically
-                    // But keeping it for explicit error handling if BASE env var is not set
-                    eprintln!("Error: Base ID is required. Provide it via:");
-                    eprintln!("  - CLI argument: rsairtable base <BASE_ID> ...");
-                    eprintln!("  - Environment variable: export BASE=appXXXXXXXXXXXXXX");
-                    process::exit(1);
-                }
-            };
+            let base_id = base_matches.get_one::<String>("base-id").expect(
+                "BASE_ID is required. This should not happen if clap configuration is correct.",
+            );
             let base = client.base(&base_id);
 
             match base_matches.subcommand() {
