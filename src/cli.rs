@@ -9,6 +9,9 @@ use std::process;
 
 #[tokio::main]
 async fn main() {
+    // Load environment variables from .env file if it exists
+    dotenv::dotenv().ok();
+    
     let matches = build_cli().get_matches();
 
     if let Err(e) = run_command(matches).await {
