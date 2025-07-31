@@ -23,7 +23,7 @@
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let client = Client::new("your_api_key".to_string());
 //!     
-//!     let records = client
+//!     let (records, _offset) = client
 //!         .base("appXXXXXXXXXXXXXX")
 //!         .table("Table Name")
 //!         .list()

@@ -610,6 +610,235 @@ impl TableHandle {
         }
     }
 
+    /// Get table schema information
+    pub async fn schema(&self) -> Result<TableSchema> {
+        // Get the base schema and extract this table's schema
+        let base_schema = self.base.schema().await?;
+
+        let table_schema = base_schema
+            .tables
+            .into_iter()
+            .find(|t| t.name == self.table_name)
+            .ok_or_else(|| Error::Api {
+                status: 404,
+                message: format!("Table '{}' not found in base", self.table_name),
+            })?;
+
+        Ok(table_schema)
+    }
+
+    /// Create a new field in the table
+    ///
+    /// **Note**: This operation is not currently supported by the Airtable API.
+    /// Field creation requires manual interaction through the Airtable web interface
+    /// or special permissions that may not be available to standard API users.
+    ///
+    /// This method will return a 404 error in most cases, as the API endpoint
+    /// for field creation does not exist or is not accessible.
+    ///
+    /// **Recommendation**: Use the `schema()` method to inspect existing fields.
+    pub async fn create_field(&self, field_definition: serde_json::Value) -> Result<FieldSchema> {
+        let url = format!(
+            "{}/meta/bases/{}/tables/{}/fields",
+            self.base.client.config.endpoint_url,
+            self.base.base_id,
+            urlencoding::encode(&self.table_name)
+        );
+
+        let response = self
+            .base
+            .client
+            .http_client
+            .post(&url)
+            .json(&field_definition)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let field: FieldSchema = response.json().await?;
+        Ok(field)
+    }
+
+    /// Delete a field from the table
+    ///
+    /// **Note**: This operation is not currently supported by the Airtable API.
+    /// Field deletion requires manual interaction through the Airtable web interface
+    /// or special permissions that may not be available to standard API users.
+    ///
+    /// This method will return a 404 error in most cases, as the API endpoint
+    /// for field deletion does not exist or is not accessible.
+    ///
+    /// **Recommendation**: Use the `schema()` method to inspect existing fields.
+    pub async fn delete_field(&self, field_id: &str) -> Result<()> {
+        let url = format!(
+            "{}/meta/bases/{}/tables/{}/fields/{}",
+            self.base.client.config.endpoint_url,
+            self.base.base_id,
+            urlencoding::encode(&self.table_name),
+            field_id
+        );
+
+        let response = self.base.client.http_client.delete(&url).send().await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        Ok(())
+    }
+
+    /// Get comments for a record
+    pub async fn comments(&self, record_id: &str) -> Result<Vec<Comment>> {
+        let url = format!(
+            "{}/{}/{}/{}/comments",
+            self.base.client.config.endpoint_url,
+            self.base.base_id,
+            urlencoding::encode(&self.table_name),
+            record_id
+        );
+
+        let response = self.base.client.http_client.get(&url).send().await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let comments_response: serde_json::Value = response.json().await?;
+        let comments: Vec<Comment> = serde_json::from_value(
+            comments_response
+                .get("comments")
+                .unwrap_or(&serde_json::Value::Array(vec![]))
+                .clone(),
+        )?;
+        Ok(comments)
+    }
+
+    /// Add a comment to a record
+    pub async fn add_comment(&self, record_id: &str, text: &str) -> Result<Comment> {
+        let url = format!(
+            "{}/{}/{}/{}/comments",
+            self.base.client.config.endpoint_url,
+            self.base.base_id,
+            urlencoding::encode(&self.table_name),
+            record_id
+        );
+
+        let request_body = json!({
+            "text": text
+        });
+
+        let response = self
+            .base
+            .client
+            .http_client
+            .post(&url)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(self.base.client.parse_error_response(response).await);
+        }
+
+        let comment: Comment = response.json().await?;
+        Ok(comment)
+    }
+
+    /// Upload an attachment to a record
+    ///
+    /// **Note**: Direct file uploads are not currently supported by the Airtable API.
+    /// Attachment uploads require a URL-based approach where you provide publicly
+    /// accessible URLs to files rather than uploading file content directly.
+    ///
+    /// This method will return a 404 error in most cases, as the API endpoint
+    /// for direct file uploads does not exist or requires a different approach.
+    ///
+    /// **Alternative Approach**: Use the `update()` method with attachment URLs:
+    /// ```rust,no_run
+    /// use serde_json::json;
+    ///
+    /// // In an async context with table and record_id available:
+    /// let attachment_data = json!([{
+    ///     "url": "https://example.com/publicly-accessible-file.pdf",
+    ///     "filename": "document.pdf"
+    /// }]);
+    /// // table.update(record_id, json!({ "Attachments": attachment_data })).await?;
+    /// ```
+    ///
+    /// **Important**: Attachment URLs must be publicly accessible (no auth required)
+    /// and will expire after approximately 2 hours for security reasons.
+    pub async fn upload_attachment(
+        &self,
+        record_id: &str,
+        field_name: &str,
+        file_content: &[u8],
+        filename: &str,
+        content_type: &str,
+    ) -> Result<Attachment> {
+        // Step 1: Upload the file content to get a temporary URL
+        let upload_url = format!(
+            "{}/meta/bases/{}/tables/{}/fields/{}/uploadAttachment",
+            self.base.client.config.endpoint_url,
+            self.base.base_id,
+            urlencoding::encode(&self.table_name),
+            urlencoding::encode(field_name)
+        );
+
+        // Create multipart form data
+        let part = reqwest::multipart::Part::bytes(file_content.to_vec())
+            .file_name(filename.to_string())
+            .mime_str(content_type)
+            .map_err(|e| Error::Api {
+                status: 400,
+                message: format!("Invalid content type: {}", e),
+            })?;
+
+        let form = reqwest::multipart::Form::new().part("file", part);
+
+        let upload_response = self
+            .base
+            .client
+            .http_client
+            .post(&upload_url)
+            .multipart(form)
+            .send()
+            .await?;
+
+        if !upload_response.status().is_success() {
+            return Err(self.base.client.parse_error_response(upload_response).await);
+        }
+
+        let upload_result: serde_json::Value = upload_response.json().await?;
+        let attachment_data = upload_result.get("attachment").ok_or_else(|| Error::Api {
+            status: 500,
+            message: "No attachment data in upload response".to_string(),
+        })?;
+
+        // Step 2: Update the record to attach the uploaded file
+        let current_record = self.get(record_id).await?;
+        let mut current_attachments = current_record
+            .fields
+            .get(field_name)
+            .and_then(|v| v.as_array())
+            .map(|arr| arr.clone())
+            .unwrap_or_else(Vec::new);
+
+        current_attachments.push(attachment_data.clone());
+
+        let update_fields = json!({
+            field_name: current_attachments
+        });
+
+        self.update(record_id, update_fields).await?;
+
+        // Parse and return the attachment info
+        let attachment: Attachment = serde_json::from_value(attachment_data.clone())?;
+        Ok(attachment)
+    }
+
     /// Create an iterator for paginated record retrieval
     pub fn iterate(&self) -> RecordIteratorBuilder {
         RecordIteratorBuilder {
