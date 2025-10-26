@@ -47,7 +47,7 @@ fn build_cli() -> Command {
     Command::new("rsairtable")
         .version("0.1.0")
         .about("Rust client for Airtable API - compatible with pyairtable")
-        .after_help("HINT: Use 'rsairtable base [BASE_ID] --help' to see table operations, then 'rsairtable base [BASE_ID] table <TABLE_NAME> --help' for record operations\nBASE_ID can be omitted if BASE environment variable is set or if you have only one base")
+        .after_help("DEFAULT: When run without arguments, fetches all records from Cases table and saves to cases.json\nHINT: Use 'rsairtable base [BASE_ID] --help' to see table operations, then 'rsairtable base [BASE_ID] table <TABLE_NAME> --help' for record operations\nBASE_ID can be omitted if BASE environment variable is set or if you have only one base")
         .arg(
             Arg::new("key")
                 .short('k')
@@ -541,11 +541,45 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
             }
         }
         _ => {
-            eprintln!("No command specified. Use --help for usage information.");
-            process::exit(1);
+            // Default behavior: run 'base table Cases records' and save to cases.json
+            run_default_command(client).await?;
         }
     }
 
+    Ok(())
+}
+
+/// Run the default command: get all records from Cases table and save to cases.json
+async fn run_default_command(client: Client) -> Result<(), Box<dyn std::error::Error>> {
+    // Auto-detect base if only one is available
+    let bases = client.bases().await?;
+    let base_id = if bases.len() == 1 {
+        println!("Auto-detected base: {} - {}", bases[0].id, bases[0].name);
+        bases[0].id.clone()
+    } else if bases.is_empty() {
+        return Err(Box::new(rsairtable::Error::config("No bases found. Check your API key and permissions.")));
+    } else {
+        println!("Multiple bases available:");
+        for base in &bases {
+            println!("  {} - {}", base.id, base.name);
+        }
+        return Err(Box::new(rsairtable::Error::config(
+            "Multiple bases found. Please specify BASE_ID or set BASE environment variable."
+        )));
+    };
+
+    let base = client.base(&base_id);
+    let table = base.table("Cases");
+    
+    // Get all records from Cases table
+    println!("Fetching all records from Cases table...");
+    let (records, _) = table.list().execute().await?;
+    
+    // Save to cases.json
+    let json_output = serde_json::to_string_pretty(&records)?;
+    std::fs::write("cases.json", json_output)?;
+    
+    println!("Successfully saved {} records to cases.json", records.len());
     Ok(())
 }
 

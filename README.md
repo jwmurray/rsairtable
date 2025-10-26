@@ -20,6 +20,19 @@ A comprehensive Rust client for the Airtable API, fully compatible with pyairtab
 
 ## 🏁 Quick Start
 
+### Default Behavior
+
+**The most common usage** - simply run without any arguments:
+
+```bash
+rsairtable
+```
+
+This automatically:
+- Auto-detects your base (if you have only one)
+- Fetches all records from the "Cases" table
+- Saves them to `cases.json`
+
 ### Installation
 
 Add to your `Cargo.toml`:
@@ -78,6 +91,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### CLI Usage
 
 ```bash
+# Default behavior - get all Cases records and save to cases.json
+rsairtable
+
 # Get user information
 rsairtable whoami
 
