@@ -143,6 +143,12 @@ rsairtable -v base table "Customers" records --all
 #### Record Retrieval Patterns
 
 ```bash
+# Store specific matter into json file
+cargo run -- base table Matters records --formula "RECORD_ID()='recrh79HILmmNEepC'" > pratt_matter.json
+```
+
+
+```bash
 # List all records
 rsairtable base <BASE_ID> table <TABLE> records
 
@@ -152,15 +158,15 @@ rsairtable base <BASE_ID> table <TABLE> records \
 ```
 
 ```bash
-#Create mapping of non-null airtable ids to clio ids
-rsairtable base table Matters records --all -F "Clio Matter ID" | jq -r '.[0] | map(select(.fields."Clio Ma
-tter ID" != null)) | map({(.id): .fields."Clio Matter ID"}) | add' > mapping_no_nulls_jq.json
-```
-
-```bash
 # Create mapping of all airetable ids to clio ids
 rsairtable base table Matters records --all -F "Clio Matter ID" | jq -r '.[0] | map({(.id): .fields."Clio M
 atter ID"}) | add' > mapping.json
+```
+
+```bash
+#Create mapping of non-null airtable ids to clio ids
+rsairtable base table Matters records --all -F "Clio Matter ID" | jq -r '.[0] | map(select(.fields."Clio Ma
+tter ID" != null)) | map({(.id): .fields."Clio Matter ID"}) | add' > mapping_no_nulls_jq.json
 ```
 
 ## 📚 Documentation

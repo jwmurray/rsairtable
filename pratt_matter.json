@@ -4,76 +4,20 @@
       "id": "recrh79HILmmNEepC",
       "createdTime": "2024-12-05T02:27:42Z",
       "fields": {
-        "Clio Responsible Attorney": [
-          "rectT7kxkcU9t2bui"
+        "Clio Matter Details": "Scheduled for free call consult for 1pm, 26 April '24\n--\nsurgery Dec 27 '22 in SLC - Family med doc who had chronic back pain - replaced disc previously w/ doc - during follow-up surgery, he cut vein & patched up & transfusion also occurred to manage bleeding & told PA to close - EMG tech was monitoring leg nerves & after doctor left, EMG told PA knees down stop showing feeling - PA didn't recognize & told him to wake him up & go from there - EMG said no & to get doc - apparently doc was in another case w/ no phone on him - after MRI second surgery, showed proof of blood - no notes showed any measure of blood loss -\n--\nMatter Description:\nI has permanent nerve damage in my back, legs, and groin region that occurred during a surgery where multiple medical mistakes occurred.\nQuestion | Answer\nStatus of the Claim | No action taken yet\nWhen Did the Incident Occur? | < 1 year ago\nInjuries From Medical Malpractice | Long term loss of physical ability\n",
+        "Clio Case Number": 6813,
+        "Clio Client Name": "David Pratt",
+        "Consultation Status Last Modified": "2024-12-26T02:45:24.000Z",
+        "Consultation Status Last Modified (Legacy - Lead)": [
+          "2024-05-01T17:22:21.000Z"
         ],
-        "Matter Url": "https://app.clio.com/nc/#/matters/1695426650",
-        "Clio Contact ID": "2192104235",
-        "Name (from Consult Attorney Name)": [
-          "Chris Binning"
+        "Contact ID": [
+          "2192104235"
         ],
         "Open Drive Folder Button": {
           "label": "Open Drive Folder",
           "url": ""
         },
-        "Last Synced": "2025-07-30T18:45:46.594Z",
-        "Charged CC Processing Fee": 0,
-        "Clio Created Date": "2024-05-01T17:23:00.000Z",
-        "First Name": "David",
-        "Retainer Description": {
-          "errorType": "emptyDependency",
-          "isStale": false,
-          "state": "error",
-          "value": null
-        },
-        "Matter Title AI": {
-          "errorType": "emptyDependency",
-          "isStale": false,
-          "state": "error",
-          "value": "Medical Malpractice"
-        },
-        "Consultation Score": "N/A",
-        "UID": "(801) 471-9673 - prattdh@gmail.com - David",
-        "Responsible Attorney (Airtable User)": [
-          {
-            "email": "michael@hepworthlegal.com",
-            "id": "usrJ05GWnaTOgorOH",
-            "name": "Michael Hepworth"
-          }
-        ],
-        "Clio Import Case Billing": "CC ",
-        "Clio Originating Attorney": [
-          "recLVmkzg9Xh2C2fP"
-        ],
-        "Date Created": "2024-12-05T02:27:42.000Z",
-        "Clio Matter Details": "Scheduled for free call consult for 1pm, 26 April '24\n--\nsurgery Dec 27 '22 in SLC - Family med doc who had chronic back pain - replaced disc previously w/ doc - during follow-up surgery, he cut vein & patched up & transfusion also occurred to manage bleeding & told PA to close - EMG tech was monitoring leg nerves & after doctor left, EMG told PA knees down stop showing feeling - PA didn't recognize & told him to wake him up & go from there - EMG said no & to get doc - apparently doc was in another case w/ no phone on him - after MRI second surgery, showed proof of blood - no notes showed any measure of blood loss -\n--\nMatter Description:\nI has permanent nerve damage in my back, legs, and groin region that occurred during a surgery where multiple medical mistakes occurred.\nQuestion | Answer\nStatus of the Claim | No action taken yet\nWhen Did the Incident Occur? | < 1 year ago\nInjuries From Medical Malpractice | Long term loss of physical ability\n",
-        "Proposed Milestones": {
-          "isStale": true,
-          "state": "empty",
-          "value": null
-        },
-        "Clio Retainer Paid": "Contingency",
-        "Retained From Consult": "Yes",
-        "Airtable user (from Clio Paralegal)": [
-          {
-            "email": "swebb@hepworthlegal.com",
-            "id": "usrCa0I8qSLmYgeFM",
-            "name": "Sydney Webb"
-          }
-        ],
-        "Client Full Name": "David Pratt",
-        "Consult Notes Summary": {
-          "isStale": true,
-          "state": "empty",
-          "value": null
-        },
-        "ID (from Consulting Attorney Name) (from Lead) copy": [
-          "recLVmkzg9Xh2C2fP"
-        ],
-        "Case Number String Cast": "6813",
-        "Send SMS (from Lead)": [
-          "https://webhook.botpress.cloud/ffa5c7ee-a0dd-4f74-a1cc-90581c6b1a58?messageType=manual&recordID=recqmDUL6Kc7ntTpq"
-        ],
         "Tasks": [
           "recUZOMg4QQbDhA0S",
           "rec9q7YHN00klgakW",
@@ -94,30 +38,100 @@
           "recsbg6eTfEcOQb8A",
           "rech1Xh55nRzAWu0D"
         ],
-        "Unbillable Consultation Attorney Fee": 0,
-        "Clio Manage Url": [
-          "https://app.clio.com/nc/#/contacts/2192104235"
+        "User rate (from Consulting Attorney Name) (from Lead)": [
+          425
         ],
-        "Record ID (from Matter Milestones)": [
-          "rechPDnNBYfFN7v9P"
+        "Pre-Consultation Summary": {
+          "errorType": "emptyDependency",
+          "isStale": false,
+          "state": "error",
+          "value": null
+        },
+        "Airtable user (from Clio Paralegal)": [
+          {
+            "email": "swebb@hepworthlegal.com",
+            "id": "usrCa0I8qSLmYgeFM",
+            "name": "Sydney Webb"
+          }
         ],
+        "Clio Status": "Open",
+        "Date Created": "2024-12-05T02:27:42.000Z",
         "Active Zarah Chats": [
           "2024-04-25T20:03:58.000Z"
         ],
-        "Clio Matter Url": "https://app.clio.com/nc/#/matters/1695426650",
-        "Client Name Display copy": "David Pratt",
-        "Matter Type": [
-          "rec8JEUkDvL0dLhAa"
+        "Consult Notes Summary": {
+          "isStale": true,
+          "state": "empty",
+          "value": null
+        },
+        "Consult Cost (From Calendly) (from Lead)": [
+          0
         ],
-        "SN Retainer Status": "Not Sent / Cancelled",
-        "Conversation History (from Lead)": [
-          "✏️ GPT - 4/25/2024, 1:56:00 PM\nSubject: Expert Assistance for Your Medical Malpractice Concerns\n\nHello David,\n\nI'm Zarah, a legal assistant at Hepworth Legal. We confidently handle Medical Malpractice cases and are here to support you through any questions you may have about your situation. Please feel free to reach out for more information.\n\nWarm regards,\n\nZarah\nHepworth Legal - Attorneys at Law\nPhone: 801-872-2222\nEmail: info@hepworthlegal.com\nWebsite: www.hepworthlegal.com\nAddress: 320 W 500 S Suite 200 Bountiful, UT 84010"
-        ],
+        "Consultation Matter Title": "Medical Malpractice",
         "ID (from Consulting Attorney Name) (from Lead)": [
           356771464
         ],
-        "Matter Title": "David Pratt - 6813 CC  - Medical Malpractice",
-        "Client Name Display": "David Pratt",
+        "Last Name": "Pratt",
+        "Client Full Name": "David Pratt",
+        "Consultation Analysis": {
+          "errorType": "emptyDependency",
+          "isStale": false,
+          "state": "error",
+          "value": null
+        },
+        "Clio Created Date": "2024-05-01T17:23:00.000Z",
+        "Last Synced": "2025-07-30T18:45:46.594Z",
+        "Matter Milestones": [
+          "rec1LjxTvDq6N6EuO",
+          "rechPDnNBYfFN7v9P"
+        ],
+        "Interaction Type": [
+          "Nolo",
+          "Call"
+        ],
+        "Conversation History (from Lead)": [
+          "✏️ GPT - 4/25/2024, 1:56:00 PM\nSubject: Expert Assistance for Your Medical Malpractice Concerns\n\nHello David,\n\nI'm Zarah, a legal assistant at Hepworth Legal. We confidently handle Medical Malpractice cases and are here to support you through any questions you may have about your situation. Please feel free to reach out for more information.\n\nWarm regards,\n\nZarah\nHepworth Legal - Attorneys at Law\nPhone: 801-872-2222\nEmail: info@hepworthlegal.com\nWebsite: www.hepworthlegal.com\nAddress: 320 W 500 S Suite 200 Bountiful, UT 84010"
+        ],
+        "Conflict Check Status": [
+          "No Conflicts Found"
+        ],
+        "Clio Retainer Paid": "Contingency",
+        "Clio Import Case Billing": "CC ",
+        "Consultation Score": "N/A",
+        "Clio Description": "CC  - Medical Malpractice",
+        "Clio Matter Url": "https://app.clio.com/nc/#/matters/1695426650",
+        "Lead": [
+          "recqmDUL6Kc7ntTpq"
+        ],
+        "Matter Type": [
+          "rec8JEUkDvL0dLhAa"
+        ],
+        "Phone": "(801) 471-9673",
+        "Desired Outcome": {
+          "isStale": true,
+          "state": "generated",
+          "value": "Reach a settlement regarding medical malpractice related to spinal surgery"
+        },
+        "SN Retainer Status": "Not Sent / Cancelled",
+        "User rate (from Consult Attorney Name)": [
+          425
+        ],
+        "ID (from Consult Attorney Name)": [
+          356771464
+        ],
+        "Name (from Clio Responsible Attorney)": [
+          "Michael Hepworth"
+        ],
+        "Retained Date": "2024-05-01",
+        "Retainer Description": {
+          "errorType": "emptyDependency",
+          "isStale": false,
+          "state": "error",
+          "value": null
+        },
+        "Consult Attorney Name": [
+          "recLVmkzg9Xh2C2fP"
+        ],
         "Clio Matter Type": [
           "rec8JEUkDvL0dLhAa"
         ],
@@ -126,38 +140,72 @@
           "recNsSUKW958hbr6k",
           "rec0V7pXjTB84TXlf"
         ],
-        "ID (from Responsible Attorney)": [
-          344343917
+        "Clio Responsible Attorney": [
+          "rectT7kxkcU9t2bui"
         ],
-        "Clio Description": "CC  - Medical Malpractice",
-        "Name (from Clio Responsible Attorney)": [
-          "Michael Hepworth"
+        "Retained From Consult": "Yes",
+        "Retainer Total With CC Processing Fee": 0,
+        "Clio Originating Attorney": [
+          "recLVmkzg9Xh2C2fP"
         ],
+        "Consultation Grade": "N/A",
         "Record ID": "recrh79HILmmNEepC",
-        "Retained Date": "2024-05-01",
-        "Send SMS Consult Button": {
-          "label": "Send SMS",
-          "url": "https://webhook.botpress.cloud/ffa5c7ee-a0dd-4f74-a1cc-90581c6b1a58?messageType=manual&recordID=recqmDUL6Kc7ntTpq"
+        "Responsible Attorney (Airtable User)": [
+          {
+            "email": "michael@hepworthlegal.com",
+            "id": "usrJ05GWnaTOgorOH",
+            "name": "Michael Hepworth"
+          }
+        ],
+        "Matter Title AI": {
+          "errorType": "emptyDependency",
+          "isStale": false,
+          "state": "error",
+          "value": "Medical Malpractice"
         },
-        "Consult Cost (From Calendly) (from Lead)": [
-          0
+        "Send SMS (from Lead)": [
+          "https://webhook.botpress.cloud/ffa5c7ee-a0dd-4f74-a1cc-90581c6b1a58?messageType=manual&recordID=recqmDUL6Kc7ntTpq"
         ],
-        "Contact ID": [
-          "2192104235"
+        "Clio Contact ID": "2192104235",
+        "ID (from Consulting Attorney Name) (from Lead) copy": [
+          "recLVmkzg9Xh2C2fP"
         ],
-        "Email (from Clio Responsible Attorney)": [
-          "michael@hepworthlegal.com"
+        "Status By Last Action (from Lead)": [
+          "reclxO2ebVw8UeXGs"
         ],
-        "Last Task Last Modified": [
-          "2024-04-26T19:12:10.000Z"
+        "Full Name & Phone": [
+          "David Pratt  -  801-471-9673 801 471 9673 801 471-9673 801-471 9673 801-4719673 801 4719673 801471-9673 801471 9673 (801) 471 9673 (801)471 9673 (801)471-9673 3 73 673 9673 19673 719673 4719673 14719673 014719673 8014719673"
         ],
-        "Interactions Consults (from Lead)": [],
-        "Clio Billing Method": "contingency",
+        "Record Case Meeting Button": {
+          "label": "Record Case Meeting",
+          "url": "https://form.fillout.com/t/5JSe4CdMguus?record_id=recrh79HILmmNEepC"
+        },
+        "Client Name Display": "David Pratt",
+        "First Name": "David",
         "Open Case Meeting": {
           "label": "Open Case Meeting",
           "url": null
         },
-        "Consultation Status Last Modified": "2024-12-26T02:45:24.000Z",
+        "Send SMS Consult Button": {
+          "label": "Send SMS",
+          "url": "https://webhook.botpress.cloud/ffa5c7ee-a0dd-4f74-a1cc-90581c6b1a58?messageType=manual&recordID=recqmDUL6Kc7ntTpq"
+        },
+        "UID": "(801) 471-9673 - prattdh@gmail.com - David",
+        "Last Modified Synced Fields": "2025-07-30T18:45:47.000Z",
+        "Charged CC Processing Fee": 0,
+        "Opposing Parties": "St Marks",
+        "Realization Report": "12/11/2024, 12/13/2024, 12/11/2024, 12/13/2024, 8/1/2024, 8/2/2024, 8/16/2024, 8/20/2024, 9/18/2024, 9/25/2024, 9/25/2024, 10/10/2024, 10/11/2024, 10/30/2024, 11/26/2024, 11/26/2024, 12/2/2024, 12/3/2024, 12/3/2024, 12/3/2024, 12/11/2024, 12/11/2024, 12/12/2024, 12/18/2024, 1/2/2025",
+        "Email": "prattdh@gmail.com",
+        "ID (from Responsible Attorney)": [
+          344343917
+        ],
+        "Full Name": [
+          "David Pratt"
+        ],
+        "Case Number String Cast": "6813",
+        "Clio Paralegal": [
+          "recAGajoDldcrgq98"
+        ],
         "Status (from Tasks)": [
           "Completed",
           "Completed",
@@ -178,100 +226,52 @@
           "Completed",
           "Completed"
         ],
-        "Zarah Chat History": [
-          "Bot: Hello David,\n\nI'm Zarah from Hepworth Legal. We have a strong track record in successfully handling medical malpractice cases, and I'm confident we can manage your legal matter with the care and expertise it deserves. Please feel free to reach out with any questions you have; we're here to help you navigate through this challenging time.\n\nBest regards,\nZarah\n\nUser: Thank you. \n\nBot: Hello David, my name is Zarah and I'm an AI legal assistant for Hepworth Legal. To assist you further, could you please share more details about your legal matter? This will help us understand how we can best support you.\n\nUser: I have a short write up, hang on. \n\nBot: David, I'm truly sorry to hear about the injuries you've sustained due to medical malpractice. In Utah, cases like yours are taken very seriously, and there's a limited time to file a medical malpractice claim, which is generally two years from the date of the incident. Can you tell me if you've already obtained your medical records from the surgery?\n\nUser: I am a Family Medicine doctor with permanent nerve damage, ED, and bladder issues from a botched back surgery with multiple mistakes made; missed diagnosis, negligent failure to treat, and delay in diagnosis/care. During my L3 micro-discectomy in December of 2022, Dr. Kade Huntsman cut a vertebral vein, then claimed to have stopped the bleeding, however it bled around my spinal cord, causing an epidural hematoma and then EMG changes (my legs went dead below the knees) that were ignored by the surgeon's PA while he was closing. The Surgeon had left the OR to do another case (claiming he was already in the other OR, which is impossible). Upon awakening, I had cauda-equina syndrome and laid there for 45 minutes before the surgeon returned and reopened my back. He had conflicting documentation regarding the epidural hematoma he evacuated, but by then the damage was done. I was out of work for 4.5 months, relearned how to walk, have permanent nerve damage from L3-S2 on an EMG, and diagnosed with a neurogenic bladder. This has changed my life and I can no longer do near the activities I used to. I promise you this is a case we can win because of my medical knowledge and your expertise, thank you. \n\nBot: David, your experience and resolve are admirable. It's clear you understand the gravity of your situation. I recommend a consultation with Hepworth Legal to explore your options. When would be a convenient time for you to discuss your case with our attorneys?\n\nUser: Anytime is fine\n\nBot: David, based on the details you've provided, I recommend scheduling a 30-minute consultation with our expert attorneys. During the consultation, we can discuss your case in depth, provide you with next steps, and if possible, work towards resolving your legal issue. The consultation fee is $250. Would you like me to schedule the consultation for you?\n"
+        "Clio Billing Method": "contingency",
+        "Matter Title": "David Pratt - 6813 CC  - Medical Malpractice",
+        "Last Task Last Modified": [
+          "2024-04-26T19:12:10.000Z"
         ],
-        "Consultation Analysis": {
-          "errorType": "emptyDependency",
-          "isStale": false,
-          "state": "error",
-          "value": null
-        },
-        "Consultation Grade": "N/A",
-        "Full Name": [
-          "David Pratt"
-        ],
-        "Clio Client Name": "David Pratt",
-        "Status (from Matter Milestones)": [
-          "Completed",
-          "Needs Due Date"
-        ],
-        "Lead": [
-          "recqmDUL6Kc7ntTpq"
-        ],
-        "ID (from Consult Attorney Name)": [
-          356771464
-        ],
-        "Zarah Chats": [
-          "recqS4jSb7lYKqY4Z"
-        ],
-        "User rate (from Consulting Attorney Name) (from Lead)": [
-          425
-        ],
-        "Consultation Status": "Retained",
-        "Email": "prattdh@gmail.com",
-        "Full Name & Phone": [
-          "David Pratt  -  801-471-9673 801 471 9673 801 471-9673 801-471 9673 801-4719673 801 4719673 801471-9673 801471 9673 (801) 471 9673 (801)471 9673 (801)471-9673 3 73 673 9673 19673 719673 4719673 14719673 014719673 8014719673"
-        ],
-        "Last Name": "Pratt",
-        "Consultation Matter Title": "Medical Malpractice",
-        "Opposing Parties": "St Marks",
-        "Clio Matter ID": "1695426650",
-        "Matter Milestones": [
-          "rec1LjxTvDq6N6EuO",
-          "rechPDnNBYfFN7v9P"
-        ],
-        "Pre-Consultation Summary": {
-          "errorType": "emptyDependency",
-          "isStale": false,
-          "state": "error",
-          "value": null
-        },
-        "Record Case Meeting Button": {
-          "label": "Record Case Meeting",
-          "url": "https://form.fillout.com/t/5JSe4CdMguus?record_id=recrh79HILmmNEepC"
-        },
-        "Clio Case Number": 6813,
-        "Interaction Type": [
-          "Nolo",
-          "Call"
-        ],
-        "User rate (from Consult Attorney Name)": [
-          425
-        ],
-        "Conflict Check Status": [
-          "No Conflicts Found"
-        ],
-        "Consult Attorney Name": [
-          "recLVmkzg9Xh2C2fP"
-        ],
-        "Realization Report": "12/11/2024, 12/13/2024, 12/11/2024, 12/13/2024, 8/1/2024, 8/2/2024, 8/16/2024, 8/20/2024, 9/18/2024, 9/25/2024, 9/25/2024, 10/10/2024, 10/11/2024, 10/30/2024, 11/26/2024, 11/26/2024, 12/2/2024, 12/3/2024, 12/3/2024, 12/3/2024, 12/11/2024, 12/11/2024, 12/12/2024, 12/18/2024, 1/2/2025",
-        "Open Clio ": {
-          "label": "View In Clio",
-          "url": "https://app.clio.com/nc/#/matters/1695426650"
-        },
-        "Desired Outcome": {
-          "isStale": true,
-          "state": "generated",
-          "value": "Reach a settlement regarding medical malpractice related to spinal surgery"
-        },
-        "Clio Paralegal": [
-          "recAGajoDldcrgq98"
-        ],
-        "Retainer Total With CC Processing Fee": 0,
-        "Phone": "(801) 471-9673",
-        "Clio Status": "Open",
         "Matter Milestone Status": [
           "Completed",
           "Needs Due Date"
         ],
-        "Consultation Status Last Modified (Legacy - Lead)": [
-          "2024-05-01T17:22:21.000Z"
+        "Name (from Consult Attorney Name)": [
+          "Chris Binning"
         ],
-        "Status By Last Action (from Lead)": [
-          "reclxO2ebVw8UeXGs"
+        "Clio Manage Url": [
+          "https://app.clio.com/nc/#/contacts/2192104235"
         ],
-        "Last Modified Synced Fields": "2025-07-30T18:45:47.000Z",
+        "Open Clio ": {
+          "label": "View In Clio",
+          "url": "https://app.clio.com/nc/#/matters/1695426650"
+        },
+        "Record ID (from Matter Milestones)": [
+          "rechPDnNBYfFN7v9P"
+        ],
+        "Status (from Matter Milestones)": [
+          "Completed",
+          "Needs Due Date"
+        ],
+        "Email (from Clio Responsible Attorney)": [
+          "michael@hepworthlegal.com"
+        ],
+        "Unbillable Consultation Attorney Fee": 0,
+        "Clio Matter ID": "1695426650",
+        "Interactions Consults (from Lead)": [],
+        "Matter Url": "https://app.clio.com/nc/#/matters/1695426650",
+        "Client Name Display copy": "David Pratt",
+        "Zarah Chats": [
+          "recqS4jSb7lYKqY4Z"
+        ],
+        "Consultation Status": "Retained",
+        "Proposed Milestones": {
+          "isStale": true,
+          "state": "empty",
+          "value": null
+        },
+        "Zarah Chat History": [
+          "Bot: Hello David,\n\nI'm Zarah from Hepworth Legal. We have a strong track record in successfully handling medical malpractice cases, and I'm confident we can manage your legal matter with the care and expertise it deserves. Please feel free to reach out with any questions you have; we're here to help you navigate through this challenging time.\n\nBest regards,\nZarah\n\nUser: Thank you. \n\nBot: Hello David, my name is Zarah and I'm an AI legal assistant for Hepworth Legal. To assist you further, could you please share more details about your legal matter? This will help us understand how we can best support you.\n\nUser: I have a short write up, hang on. \n\nBot: David, I'm truly sorry to hear about the injuries you've sustained due to medical malpractice. In Utah, cases like yours are taken very seriously, and there's a limited time to file a medical malpractice claim, which is generally two years from the date of the incident. Can you tell me if you've already obtained your medical records from the surgery?\n\nUser: I am a Family Medicine doctor with permanent nerve damage, ED, and bladder issues from a botched back surgery with multiple mistakes made; missed diagnosis, negligent failure to treat, and delay in diagnosis/care. During my L3 micro-discectomy in December of 2022, Dr. Kade Huntsman cut a vertebral vein, then claimed to have stopped the bleeding, however it bled around my spinal cord, causing an epidural hematoma and then EMG changes (my legs went dead below the knees) that were ignored by the surgeon's PA while he was closing. The Surgeon had left the OR to do another case (claiming he was already in the other OR, which is impossible). Upon awakening, I had cauda-equina syndrome and laid there for 45 minutes before the surgeon returned and reopened my back. He had conflicting documentation regarding the epidural hematoma he evacuated, but by then the damage was done. I was out of work for 4.5 months, relearned how to walk, have permanent nerve damage from L3-S2 on an EMG, and diagnosed with a neurogenic bladder. This has changed my life and I can no longer do near the activities I used to. I promise you this is a case we can win because of my medical knowledge and your expertise, thank you. \n\nBot: David, your experience and resolve are admirable. It's clear you understand the gravity of your situation. I recommend a consultation with Hepworth Legal to explore your options. When would be a convenient time for you to discuss your case with our attorneys?\n\nUser: Anytime is fine\n\nBot: David, based on the details you've provided, I recommend scheduling a 30-minute consultation with our expert attorneys. During the consultation, we can discuss your case in depth, provide you with next steps, and if possible, work towards resolving your legal issue. The consultation fee is $250. Would you like me to schedule the consultation for you?\n"
+        ],
         "Can GPT Respond (from Lead)": [
           "Yes"
         ]

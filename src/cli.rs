@@ -5,6 +5,7 @@
 
 use clap::{Arg, ArgMatches, Command};
 use rsairtable::{BaseSchema, Client, Config};
+use rsairtable::views::process_with_view;
 use std::process;
 
 #[tokio::main]
@@ -24,7 +25,7 @@ fn build_cli() -> Command {
     Command::new("rsairtable")
         .version("0.1.0")
         .about("Rust client for Airtable API - compatible with pyairtable")
-        .after_help("HINT: Use 'rsairtable base [BASE_ID] --help' to see table operations, then 'rsairtable base [BASE_ID] table <TABLE_NAME> --help' for record operations\nBASE_ID can be omitted if BASE environment variable is set")
+        .after_help("HINT: Use 'rsairtable base [BASE_ID] --help' to see table operations, then 'rsairtable base [BASE_ID] table <TABLE_NAME> --help' for record operations\nBASE_ID can be omitted if BASE environment variable is set or if you have only one base")
         .arg(
             Arg::new("key")
                 .short('k')
@@ -70,7 +71,7 @@ fn build_cli() -> Command {
         .subcommand(
             Command::new("base")
                 .about("Base operations")
-                .after_help("HINT: Use 'rsairtable base [BASE_ID] --help' to see table and record operations\nBASE_ID can be omitted if BASE environment variable is set")
+                .after_help("HINT: Use 'rsairtable base [BASE_ID] --help' to see table and record operations\nBASE_ID can be omitted if BASE environment variable is set or if you have only one base")
                 .arg(
                     Arg::new("base-id")
                         .value_name("BASE_ID")
@@ -85,7 +86,7 @@ fn build_cli() -> Command {
                 .subcommand(
                     Command::new("table")
                         .about("Table operations")
-                        .after_help("HINT: Use 'rsairtable base [BASE_ID] table <TABLE_NAME> --help' to see record operations (create, update, delete, records)\nBASE_ID can be omitted if BASE environment variable is set")
+                        .after_help("HINT: Use 'rsairtable base [BASE_ID] table <TABLE_NAME> --help' to see record operations (create, update, delete, records)\nBASE_ID can be omitted if BASE environment variable is set or if you have only one base")
                         .arg(
                             Arg::new("table-name")
                                 .value_name("TABLE_NAME")
@@ -108,6 +109,12 @@ fn build_cli() -> Command {
                                         .long("view")
                                         .value_name("VIEW")
                                         .help("Filter records by a view"),
+                                )
+                                .arg(
+                                    Arg::new("data-view")
+                                        .long("data-view")
+                                        .value_name("DATA_VIEW")
+                                        .help("Apply specialized data view formatting (e.g., 'clio')"),
                                 )
                                 .arg(
                                     Arg::new("limit")
@@ -250,9 +257,27 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
             }
         }
         Some(("base", base_matches)) => {
-            let base_id = base_matches.get_one::<String>("base-id").expect(
-                "BASE_ID is required. This should not happen if clap configuration is correct.",
-            );
+            let base_id = match base_matches.get_one::<String>("base-id") {
+                Some(id) => id.clone(),
+                None => {
+                    // Try to auto-detect base if only one is available
+                    let bases = client.bases().await?;
+                    if bases.len() == 1 {
+                        println!("Auto-detected base: {} - {}", bases[0].id, bases[0].name);
+                        bases[0].id.clone()
+                    } else if bases.is_empty() {
+                        return Err(Box::new(rsairtable::Error::config("No bases found. Check your API key and permissions.")));
+                    } else {
+                        println!("Multiple bases available:");
+                        for base in &bases {
+                            println!("  {} - {}", base.id, base.name);
+                        }
+                        return Err(Box::new(rsairtable::Error::config(
+                            "Multiple bases found. Please specify BASE_ID or set BASE environment variable."
+                        )));
+                    }
+                }
+            };
             let base = client.base(&base_id);
 
             match base_matches.subcommand() {
@@ -387,9 +412,15 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
                                     );
                                 }
 
-                                // Output all records in the same format as regular queries
-                                let result = (all_records, None::<String>);
-                                println!("{}", serde_json::to_string_pretty(&result)?);
+                                // Process with data view if specified
+                                if let Some(data_view) = record_matches.get_one::<String>("data-view") {
+                                    let view_result = process_with_view(data_view, all_records)?;
+                                    println!("{}", serde_json::to_string_pretty(&view_result)?);
+                                } else {
+                                    // Output all records in the same format as regular queries
+                                    let result = (all_records, None::<String>);
+                                    println!("{}", serde_json::to_string_pretty(&result)?);
+                                }
                             } else {
                                 let records = query.execute().await?;
 
@@ -406,7 +437,13 @@ async fn run_command(matches: ArgMatches) -> Result<(), Box<dyn std::error::Erro
                                     }
                                 }
 
-                                println!("{}", serde_json::to_string_pretty(&records)?);
+                                // Process with data view if specified
+                                if let Some(data_view) = record_matches.get_one::<String>("data-view") {
+                                    let view_result = process_with_view(data_view, records.0)?;
+                                    println!("{}", serde_json::to_string_pretty(&view_result)?);
+                                } else {
+                                    println!("{}", serde_json::to_string_pretty(&records)?);
+                                }
                             }
                         }
                         Some(("schema", _)) => {
@@ -550,35 +587,35 @@ rsairtable whoami
 rsairtable bases
 
 # Get base schema (all tables and fields)
-rsairtable base schema                          # Uses BASE env var
+rsairtable base schema                          # Uses BASE env var or auto-detects if only one base
 rsairtable base appXXXXXXXXXXXXXX schema        # Explicit base ID
 
 # Generate Rust structs from base schema (ORM)
-rsairtable base orm > models.rs                # Uses BASE env var
+rsairtable base orm > models.rs                # Uses BASE env var or auto-detects if only one base
 rsairtable base appXXXXXXXXXXXXXX orm > models.rs   # Explicit base ID
 
 🗂️  TABLE OPERATIONS
 -------------------
 
 # Get table schema
-rsairtable base table "TableName" schema               # Uses BASE env var
+rsairtable base table "TableName" schema               # Uses BASE env var or auto-detects if only one base
 rsairtable base appXXXXXXXXXXXXXX table "TableName" schema  # Explicit base ID
 
 📄 RECORD OPERATIONS
 -------------------
 
 # List all records (default: first 100)
-rsairtable base table "TableName" records              # Uses BASE env var
+rsairtable base table "TableName" records              # Uses BASE env var or auto-detects if only one base
 rsairtable base appXXXXXXXXXXXXXX table "TableName" records  # Explicit base ID
 
 # Get specific record by ID (equivalent to a "get" command)
-rsairtable base table "TableName" records \\          # Uses BASE env var
+rsairtable base table "TableName" records \\          # Uses BASE env var or auto-detects if only one base
   -w "RECORD_ID()='recXXXXXXXXXXXXX'"
 rsairtable base appXXXXXXXXXXXXXX table "TableName" records \\  # Explicit base ID
   -w "RECORD_ID()='recXXXXXXXXXXXXX'"
 
 # List specific number of records
-rsairtable base table "TableName" records -n 10       # Uses BASE env var
+rsairtable base table "TableName" records -n 10       # Uses BASE env var or auto-detects if only one base
 
 # List records with filtering
 rsairtable base appXXXXXXXXXXXXXX table "TableName" records -w "Status = 'Active'"
@@ -599,7 +636,7 @@ rsairtable base appXXXXXXXXXXXXXX table "TableName" records -D -n 5
 --------------------------------------
 
 # Automatic pagination - get ALL records from a table (may take time for large tables)
-rsairtable base table "TableName" records --all            # Uses BASE env var
+rsairtable base table "TableName" records --all            # Uses BASE env var or auto-detects if only one base
 rsairtable base appXXXXXXXXXXXXXX table "TableName" records --all  # Explicit base ID
 
 # Get all records with filtering (retrieve all matching records)
@@ -635,11 +672,11 @@ rsairtable -v base table "Customers" records --all \\
 ------------------
 
 # Create a simple record
-rsairtable base table "TableName" create \\              # Uses BASE env var
+rsairtable base table "TableName" create \\              # Uses BASE env var or auto-detects if only one base
   -j '{{"Name": "New Record", "Status": "Active"}}'
 
 # Create record with typecast (automatic type conversion)  
-rsairtable base table "TableName" create \\              # Uses BASE env var
+rsairtable base table "TableName" create \\              # Uses BASE env var or auto-detects if only one base
   -j '{{"Name": "Auto Convert", "Date": "2024-01-15"}}' \\
   --typecast
 

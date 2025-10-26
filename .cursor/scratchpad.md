@@ -1,146 +1,177 @@
-# RSAirtable Enhancement - Pagination Support
+# RSAirtable Enhancement - View-Based Data Extraction
 
-## Background and Motivation
+## Project Overview
 
-During development, we discovered that the RSAirtable CLI only retrieves the first 100 records when listing all records from a table. This is because:
+**Goal**: Add a `--view` option with specialized data views, starting with a "clio" view that extracts and formats Matter records with Clio-specific fields.
 
-1. Airtable API returns a maximum of 100 records per request
-2. The CLI doesn't implement automatic pagination
-3. The CLI lacks an `--offset` parameter to manually handle pagination
-4. Users need to map all Clio Matter IDs to Airtable Matter IDs, which requires retrieving all records
-
-**Current Limitation:**
+**User Request**: Create a single Rust command equivalent to:
 ```bash
-cargo run -- base table Matters records -F "Clio Matter ID"  # Only gets 100 records
+rsairtable base table Matters records --all -F "Clio Matter ID" | jq -r '.[0] | map(select(.fields."Clio Matter ID" != null)) | map({(.id): .fields."Clio Matter ID"}) | add'
 ```
 
-**Detected Pagination Info:**
-The API response includes an offset token in the second array element: `"itrEQU2qsVLilTaYO/rec2WFUQg5cCKXIN2"`
+**Required Output Fields for Clio View**:
+- Matter Title
+- Record ID  
+- Clio Matter ID
+- Clio Matter Url
+- Clio Drive Folder
+- Open in Google drive (from Clio Drive Folder)
 
-## Key Challenges and Analysis
+## Architecture Analysis (SOLID Principles)
 
-### Technical Challenges
-1. **CLI Architecture**: The current CLI doesn't support pagination parameters
-2. **Response Handling**: The API returns `[records_array, offset_token]` but CLI doesn't use the offset
-3. **Generic Implementation**: Solution must work for any table, not just "Matters"
-4. **Memory Management**: Large datasets need efficient handling
-5. **User Experience**: Should be transparent - users shouldn't need to understand pagination
+### Single Responsibility Principle (SRP)
+- **ViewProcessor**: Handle view-specific logic and formatting
+- **FieldExtractor**: Extract and validate specific fields from records
+- **OutputFormatter**: Format data according to view requirements
 
-### Design Considerations
-1. **Automatic vs Manual**: Should pagination be automatic or controllable?
-2. **Breaking Changes**: Avoid breaking existing CLI behavior
-3. **Performance**: Large datasets should stream rather than load all into memory
-4. **Error Handling**: Network failures during pagination need proper handling
+### Open/Closed Principle (OCP)
+- Design view system to be extensible for future views ("billing", "client", etc.)
+- Use trait-based approach for view processors
 
-## High-level Task Breakdown
+### Liskov Substitution Principle (LSP)
+- All view implementations should be interchangeable through a common interface
 
-### Task 1: Add Offset Parameter Support (15-20 minutes)
-- **Goal**: Add `--offset` parameter to `records` command
-- **Success Criteria**: 
-  - CLI accepts `--offset <TOKEN>` parameter
-  - When provided, uses offset in API request
-  - Maintains backward compatibility
-- **Test**: `cargo run -- base table TestTable records --offset "token123"`
+### Interface Segregation Principle (ISP)
+- Separate view processing from general record retrieval
+- Create focused interfaces for different aspects (filtering, formatting, output)
 
-### Task 2: Implement Automatic Pagination Flag (20-25 minutes)
-- **Goal**: Add `--all` flag to automatically handle pagination
+### Dependency Inversion Principle (DIP)
+- CLI should depend on view abstractions, not concrete implementations
+- Allow for easy testing and extensibility
+
+## High-Level Task Breakdown
+
+### Task 1: Design View System Architecture (20-25 minutes)
+- **Goal**: Create extensible view system with trait-based design
 - **Success Criteria**:
-  - `--all` flag retrieves all records automatically
-  - Handles multiple API requests transparently
-  - Works with existing filters and field selections
-- **Test**: `cargo run -- base table TestTable records --all -F "Field1"`
+  - Define `ViewProcessor` trait for pluggable views
+  - Create view registry/factory pattern
+  - Design clean separation between CLI args and view logic
+- **Files**: `src/views.rs`, `src/cli.rs`
 
-### Task 3: Add Pagination Status Information (10-15 minutes)
-- **Goal**: Provide user feedback during pagination
+### Task 2: Implement Core View Infrastructure (25-30 minutes) 
+- **Goal**: Add `--view` CLI option and view processing pipeline
 - **Success Criteria**:
-  - Shows progress when using `--all`
-  - Reports total records retrieved
-  - Indicates if more records are available (when not using `--all`)
-- **Test**: Verbose output shows "Retrieved X records, fetching more..."
+  - CLI accepts `--view <VIEW_NAME>` parameter
+  - View system integrates with existing record retrieval
+  - Maintains all existing filtering capabilities
+- **Files**: `src/cli.rs`, `src/views.rs`
 
-### Task 4: Memory Optimization for Large Datasets (15-20 minutes)
-- **Goal**: Handle large datasets efficiently
+### Task 3: Create Clio View Implementation (30-35 minutes)
+- **Goal**: Implement the "clio" view with required fields and filtering
 - **Success Criteria**:
-  - Streaming output instead of loading all into memory
-  - Configurable batch size
-  - Memory usage remains constant regardless of dataset size
-- **Test**: Process 10,000+ records without memory issues
+  - Filters out records without Clio Matter ID (null filtering)
+  - Extracts all 6 required fields  
+  - Formats output as structured JSON
+  - Equivalent functionality to jq pipeline
+- **Files**: `src/views/clio.rs`
 
-### Task 5: Update Documentation and Help (10-15 minutes)
-- **Goal**: Document new pagination features
+### Task 4: Add Field Validation and Error Handling (15-20 minutes)
+- **Goal**: Robust handling of missing fields and data validation
 - **Success Criteria**:
-  - `--help` shows new parameters
-  - `--help-detail` includes pagination examples
-  - README.md updated with pagination patterns
-- **Test**: Help text is clear and accurate
+  - Graceful handling of missing optional fields
+  - Clear error messages for required fields
+  - Validation that required fields exist in table schema
+- **Files**: `src/views/clio.rs`, `src/error.rs`
+
+### Task 5: Integration Testing and Validation (20-25 minutes)
+- **Goal**: Comprehensive testing of view system
+- **Success Criteria**:
+  - Unit tests for view processor
+  - Integration test comparing output to jq pipeline
+  - Performance testing with large datasets
+- **Files**: `tests/test_views.rs`
+
+### Task 6: Documentation and Help Updates (15-20 minutes)
+- **Goal**: Document new view system and clio view
+- **Success Criteria**:
+  - Updated CLI help with `--view` option
+  - Detailed help for available views
+  - README examples for clio view usage
+- **Files**: `README.md`, `src/cli.rs`
+
+## Technical Implementation Plan
+
+### 1. CLI Integration Point
+```rust
+// Add to existing records command
+#[arg(long, value_name = "VIEW_NAME", help = "Apply specialized view formatting")]
+view: Option<String>,
+```
+
+### 2. View Trait Design
+```rust
+pub trait ViewProcessor {
+    fn name(&self) -> &'static str;
+    fn description(&self) -> &'static str;
+    fn required_fields(&self) -> Vec<&'static str>;
+    fn process_records(&self, records: Vec<Record>) -> Result<serde_json::Value, Error>;
+    fn should_include_record(&self, record: &Record) -> bool;
+}
+```
+
+### 3. Clio View Specification
+- **Filter Logic**: `record.fields.get("Clio Matter ID").is_some()` and not empty
+- **Output Format**: Array of objects with the 6 required fields
+- **Field Mapping**: 
+  - `Matter Title` → `matter_title`
+  - `Record ID` → `record_id` (from `record.id`)
+  - `Clio Matter ID` → `clio_matter_id`
+  - `Clio Matter Url` → `clio_matter_url`
+  - `Clio Drive Folder` → `clio_drive_folder`
+  - `Open in Google drive` → `google_drive_link`
+
+### 4. Error Handling Strategy
+- **Missing Fields**: Log warning but continue processing
+- **Invalid View**: Clear error with list of available views
+- **Empty Results**: Informative message about filtering criteria
 
 ## Project Status Board
 
-- [x] **Task 1**: Add `--offset` parameter support
-- [x] **Task 2**: Implement `--all` flag for automatic pagination  
-- [x] **Task 3**: Add pagination status information
-- [ ] **Task 4**: Memory optimization for large datasets
-- [x] **Task 5**: Update documentation and help
+- [ ] **Task 1**: Design View System Architecture
+- [ ] **Task 2**: Implement Core View Infrastructure  
+- [ ] **Task 3**: Create Clio View Implementation
+- [ ] **Task 4**: Add Field Validation and Error Handling
+- [ ] **Task 5**: Integration Testing and Validation
+- [ ] **Task 6**: Documentation and Help Updates
 
-## Current Status / Progress Tracking
+## Success Metrics
 
-**Project Initiated**: July 31, 2025 08:15:07 MDT
+### Functional Requirements
+- ✅ Single command replaces complex jq pipeline
+- ✅ Filters null Clio Matter IDs automatically
+- ✅ Outputs structured JSON with 6 required fields
+- ✅ Maintains all existing CLI capabilities (pagination, filtering, etc.)
 
-**Task 1 Completed**: July 31, 2025 08:21:31 MDT
-**Task 2 Completed**: July 31, 2025 08:26:15 MDT
-**Task 3 Completed**: July 31, 2025 08:29:58 MDT
-**Task 5 Completed**: July 31, 2025 08:37:15 MDT
+### Non-Functional Requirements  
+- ✅ Performance: No significant slowdown vs current CLI
+- ✅ Memory: Efficient processing of large datasets
+- ✅ Extensibility: Easy to add new views (billing, client, etc.)
+- ✅ Usability: Clear help and error messages
 
-**Current State**: Tasks 1, 2, 3 & 5 successfully implemented and tested
+### Target Command Signature
+```bash
+# New streamlined command
+cargo run -- base table Matters records --all --view clio
 
-**Task 1 Summary**:
-- ✅ Added `--offset <OFFSET_TOKEN>` parameter to CLI
-- ✅ Integrated with existing library's offset support
-- ✅ Maintains backward compatibility
-- ✅ Works with all existing filters and parameters  
-- ✅ Created comprehensive tests for offset functionality
-- ✅ Verified different records are returned when using offset
+# Equivalent to current complex pipeline:
+# cargo run -- base table Matters records --all -F "Clio Matter ID" | 
+# jq -r '.[0] | map(select(.fields."Clio Matter ID" != null)) | 
+# map({(.id): .fields."Clio Matter ID"}) | add'
+```
 
-**Task 2 Summary**:
-- ✅ Added `--all` flag for automatic pagination
-- ✅ Implemented proper mutual exclusivity with `--offset` and `--limit`
-- ✅ Automatic pagination loop with all existing filters supported
-- ✅ Consistent JSON output format `[records_array, null]`
-- ✅ Verified retrieval of 2,275 total records vs 100 normal limit
-- ✅ Created comprehensive test suite for all functionality
+## Current Status
 
-**Task 3 Summary**:
-- ✅ Added verbose mode (`-v`) with pagination progress reporting
-- ✅ Shows "Starting pagination" and progress during `--all` operations
-- ✅ Reports batch progress: "Retrieved X records (total: Y)"
-- ✅ Final completion message: "Completed! Retrieved X records total"
-- ✅ Normal mode indicates if more records available vs all retrieved
-- ✅ Non-verbose mode remains silent (backward compatibility)
-- ✅ Created comprehensive tests for verbose functionality
+**Project Initiated**: July 31, 2025 10:35:20 MDT  
+**Phase**: Planning Complete - Ready for Implementation
 
-**Task 5 Summary**:
-- ✅ Updated CLI `--help` to show `--offset` and `--all` options
-- ✅ Added comprehensive pagination section to `--help-detail`
-- ✅ Enhanced README.md with pagination features and examples
-- ✅ Added troubleshooting section for pagination issues
-- ✅ Included real-world pagination examples in detailed help
-- ✅ Updated feature list to highlight automatic pagination
-- ✅ Added performance tips and memory usage guidance
+## Executor Notes
 
-**Test Results**:
-- Manual testing: ✅ All four tasks work correctly
-- Integration tests: ✅ All pagination and verbose tests pass  
-- Documentation: ✅ Help system shows pagination options clearly
-- User experience: ✅ Comprehensive examples and troubleshooting available
+*Ready for implementation - all tasks defined with clear success criteria*
 
-**Remaining**: Task 4 (Memory optimization for large datasets) - Optional enhancement
+## Dependencies and Assumptions
 
-## Executor's Feedback or Assistance Requests
-
-*None at this time - planning phase*
-
-## Lessons
-
-1. **Discovery**: The rsairtable CLI was missing pagination support despite the underlying library having the capability
-2. **API Response Structure**: Airtable API returns `[records, offset_token]` where offset_token indicates more records available
-3. **User Need**: Real-world usage requires processing all records in a table, not just the first 100
+- **Table Structure**: Assumes "Matters" table has the 6 required fields
+- **Field Names**: Field names are exact matches (case-sensitive)
+- **Backwards Compatibility**: All existing CLI functionality must remain unchanged
+- **Performance**: Should handle 2,275+ records efficiently (current dataset size)
