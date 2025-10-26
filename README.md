@@ -423,6 +423,41 @@ BASE=appXXXXXXXXXXXXXX
 AIRTABLE_ENDPOINT_URL=https://api.airtable.com/v0  # Custom endpoint
 ```
 
+### Environment File Configuration
+
+rsairtable supports multiple environment file formats with automatic fallback:
+
+#### Priority Order:
+1. **`.env` file** - Standard environment file (if it contains Airtable tokens)
+2. **`airtable.env` file** - Fallback if `.env` has no Airtable tokens
+3. **System environment variables** - Always checked
+
+#### Setup Examples:
+
+**Option 1: Use .env file (recommended)**
+```bash
+# Create .env file in your project root
+echo "PERSONAL_ACCESS_TOKEN=patXXXXXXXXXXXXXX" > .env
+echo "BASE=appXXXXXXXXXXXXXX" >> .env
+```
+
+**Option 2: Use airtable.env file**
+```bash
+# Create airtable.env file in your project root
+echo "PERSONAL_ACCESS_TOKEN=patXXXXXXXXXXXXXX" > airtable.env
+echo "BASE=appXXXXXXXXXXXXXX" >> airtable.env
+```
+
+**Option 3: Mixed approach (automatic fallback)**
+```bash
+# .env file exists but has no Airtable tokens
+echo "DATABASE_URL=postgres://..." > .env
+
+# airtable.env file contains Airtable configuration
+echo "PERSONAL_ACCESS_TOKEN=patXXXXXXXXXXXXXX" > airtable.env
+echo "BASE=appXXXXXXXXXXXXXX" >> airtable.env
+```
+
 ### File-based Configuration
 
 ```bash

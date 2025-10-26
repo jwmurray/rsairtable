@@ -7,17 +7,39 @@ use clap::{Arg, ArgMatches, Command};
 use rsairtable::{BaseSchema, Client, Config};
 use rsairtable::views::process_with_view;
 use std::process;
+use std::env;
 
 #[tokio::main]
 async fn main() {
-    // Load .env file BEFORE clap processes arguments to ensure env vars are available
-    dotenv::dotenv().ok();
+    // Load environment files BEFORE clap processes arguments to ensure env vars are available
+    // Priority: .env first, then airtable.env as fallback if .env has no tokens
+    load_env_files();
 
     let matches = build_cli().get_matches();
 
     if let Err(e) = run_command(matches).await {
         eprintln!("Error: {}", e);
         process::exit(1);
+    }
+}
+
+/// Load environment files with fallback logic
+/// 
+/// Priority:
+/// 1. .env file (if it exists and contains tokens)
+/// 2. airtable.env file (fallback if .env has no tokens)
+fn load_env_files() {
+    // Load .env file first if it exists
+    let env_loaded = dotenv::dotenv().is_ok();
+    
+    // Check if we found any tokens in .env
+    let has_tokens = env::var("PERSONAL_ACCESS_TOKEN").is_ok()
+        || env::var("AIRTABLE_API_KEY").is_ok()
+        || env::var("AIRTABLE_ACCESS_TOKEN").is_ok();
+    
+    // If .env was loaded but has no tokens, try airtable.env as fallback
+    if env_loaded && !has_tokens {
+        let _ = dotenv::from_filename("airtable.env");
     }
 }
 
@@ -563,7 +585,16 @@ Below are practical examples for all major operations.
 📋 SETUP AND AUTHENTICATION
 ---------------------------
 
-# Method 1: Environment variable (recommended)
+# Method 1: Environment files (recommended)
+# Option 1a: .env file
+echo "PERSONAL_ACCESS_TOKEN=patXXXXXXXXXXXXXX" > .env
+echo "BASE=appXXXXXXXXXXXXXX" >> .env
+
+# Option 1b: airtable.env file (fallback if .env has no tokens)
+echo "PERSONAL_ACCESS_TOKEN=patXXXXXXXXXXXXXX" > airtable.env
+echo "BASE=appXXXXXXXXXXXXXX" >> airtable.env
+
+# Option 1c: System environment variables
 export PERSONAL_ACCESS_TOKEN="patXXXXXXXXXXXXXX"
 export BASE="appXXXXXXXXXXXXXX"
 

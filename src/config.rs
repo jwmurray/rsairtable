@@ -37,15 +37,29 @@ impl Config {
         }
     }
 
-    /// Load configuration from environment variables and .env file
+    /// Load configuration from environment variables and .env files
     /// 
     /// This follows the pyairtable pattern of checking multiple possible env var names:
     /// - PERSONAL_ACCESS_TOKEN (preferred for Personal Access Tokens)
     /// - AIRTABLE_API_KEY (legacy API key support)
     /// - AIRTABLE_ACCESS_TOKEN (alternative name)
+    /// 
+    /// Environment file loading priority:
+    /// 1. .env file (if it exists and contains tokens)
+    /// 2. airtable.env file (fallback if .env has no tokens)
     pub fn from_env() -> Result<Self> {
-        // Load .env file if it exists (ignore errors if file doesn't exist)
-        let _ = dotenv::dotenv();
+        // Load .env file first if it exists
+        let env_loaded = dotenv::dotenv().is_ok();
+        
+        // Check if we found any tokens in .env
+        let has_tokens = env::var("PERSONAL_ACCESS_TOKEN").is_ok()
+            || env::var("AIRTABLE_API_KEY").is_ok()
+            || env::var("AIRTABLE_ACCESS_TOKEN").is_ok();
+        
+        // If .env was loaded but has no tokens, try airtable.env as fallback
+        if env_loaded && !has_tokens {
+            let _ = dotenv::from_filename("airtable.env");
+        }
 
         // Try to get API key from environment variables in priority order
         let api_key = env::var("PERSONAL_ACCESS_TOKEN")
@@ -84,9 +98,23 @@ impl Config {
     }
 
     /// Get API key from multiple possible sources
+    /// 
+    /// Environment file loading priority:
+    /// 1. .env file (if it exists and contains tokens)
+    /// 2. airtable.env file (fallback if .env has no tokens)
     pub fn api_key_from_env_or_file() -> Result<String> {
-        // Load .env file if it exists
-        let _ = dotenv::dotenv();
+        // Load .env file first if it exists
+        let env_loaded = dotenv::dotenv().is_ok();
+        
+        // Check if we found any tokens in .env
+        let has_tokens = env::var("PERSONAL_ACCESS_TOKEN").is_ok()
+            || env::var("AIRTABLE_API_KEY").is_ok()
+            || env::var("AIRTABLE_ACCESS_TOKEN").is_ok();
+        
+        // If .env was loaded but has no tokens, try airtable.env as fallback
+        if env_loaded && !has_tokens {
+            let _ = dotenv::from_filename("airtable.env");
+        }
 
         env::var("PERSONAL_ACCESS_TOKEN")
             .or_else(|_| env::var("AIRTABLE_API_KEY"))
