@@ -6,7 +6,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// A single Airtable record
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,7 +21,8 @@ pub struct Record {
 }
 
 /// Record fields - dynamic key-value structure
-pub type Fields = HashMap<String, serde_json::Value>;
+/// Uses BTreeMap to maintain alphabetical ordering of field names in JSON output
+pub type Fields = BTreeMap<String, serde_json::Value>;
 
 /// Response from list records API call
 #[derive(Debug, Clone, Serialize, Deserialize)]
